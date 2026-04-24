@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { auth } from '@/lib/firebase'
-import { onAuthStateChanged } from 'firebase/auth'
+import { useUser } from '@/lib/UserContext'
 import Sidebar from '@/components/Sidebar'
 
 // ── Mood-triggered game recommendation engine ──────────────────────────────
@@ -217,9 +217,8 @@ const QUESTIONS = [
 
 export default function CheckIn() {
   const router = useRouter()
-  const [user, setUser] = useState<any>(null)
-  const [userData, setUserData] = useState<any>(null)
-  const [userName, setUserName] = useState('')
+  const { user, userData, loading } = useUser()
+  const userName = user ? (user.displayName || user.email?.split('@')[0] || 'Student') : 'Student'
   const [currentQ, setCurrentQ] = useState(0)
   const [startTime] = useState(() => Date.now())
   const [answers, setAnswers] = useState({
@@ -236,39 +235,30 @@ export default function CheckIn() {
   const [submitError, setSubmitError] = useState('')
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (!firebaseUser) {
-        router.push('/onboarding')
-        return
-      }
-      setUser(firebaseUser)
-      setUserName(
-        firebaseUser.displayName ||
-        firebaseUser.email?.split('@')[0] ||
-        'Student'
-      )
+    if (!loading && !user) {
+      router.push('/onboarding')
+      return
+    }
 
-      try {
-        const userRes = await fetch(`/api/user?firebaseUid=${firebaseUser.uid}`)
-        const ud = await userRes.json()
-        if (!ud.error) setUserData(ud)
-
-        // Use ?date= param to do a direct date lookup — no composite index needed
-        const today = new Date().toISOString().split('T')[0]
-        const res = await fetch(`/api/checkin?userId=${firebaseUser.uid}&date=${today}`)
-        const data = await res.json()
-        if (Array.isArray(data) && data.length > 0) {
-          setAlreadyDone(true)
+    const checkStatus = async () => {
+      if (user) {
+        try {
+          const today = new Date().toISOString().split('T')[0]
+          const res = await fetch(`/api/checkin?userId=${user.uid}&date=${today}`)
+          const data = await res.json()
+          if (Array.isArray(data) && data.length > 0) {
+            setAlreadyDone(true)
+          }
+        } catch (e) {
+          console.error(e)
         }
-      } catch (e) {
-        console.error(e)
       }
-    })
-    return () => unsub()
-  }, [])
+    }
+    checkStatus()
+  }, [user, loading, router])
 
   const handleSubmit = async () => {
-    if (!answers.emotion) return
+    if (!answers.emotion || !user) return
     setSubmitting(true)
     setSubmitError('')
     try {

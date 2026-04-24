@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { auth } from '@/lib/firebase'
-import { onAuthStateChanged } from 'firebase/auth'
+import { useUser } from '@/lib/UserContext'
 import Sidebar from '@/components/Sidebar'
 
 type Message = {
@@ -14,44 +14,20 @@ type Message = {
 
 export default function Companion() {
   const router = useRouter()
-  const [user, setUser] = useState<any>(null)
-  const [userName, setUserName] = useState('')
-  const [userData, setUserData] = useState<any>(null)
-  const [checkins, setCheckins] = useState<any[]>([])
-  const [baseline, setBaseline] = useState<any>(null)
+  const { user, userData, baseline, checkins, loading } = useUser()
+  const userName = user ? (user.displayName || user.email?.split('@')[0] || 'Student') : 'Student'
+
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(true)
   const [thinking, setThinking] = useState(false)
   const [started, setStarted] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (!firebaseUser) { router.push('/onboarding'); return }
-      setUser(firebaseUser)
-      setUserName(
-        firebaseUser.displayName ||
-        firebaseUser.email?.split('@')[0] ||
-        'Student'
-      )
-      try {
-        const userRes = await fetch(`/api/user?firebaseUid=${firebaseUser.uid}`)
-        const ud = await userRes.json()
-        if (!ud.error) setUserData(ud)
-
-        const baselineRes = await fetch(`/api/baseline?userId=${firebaseUser.uid}`)
-        const bd = await baselineRes.json()
-        if (bd.baseline) setBaseline(bd.baseline)
-        if (bd.recentCheckins) setCheckins(bd.recentCheckins)
-      } catch (e) {
-        console.error(e)
-      } finally {
-        setLoading(false)
-      }
-    })
-    return () => unsub()
-  }, [])
+    if (!loading && !user) {
+      router.push('/onboarding')
+    }
+  }, [user, loading, router])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })

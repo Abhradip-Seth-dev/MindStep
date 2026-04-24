@@ -1,5 +1,10 @@
+import { verifyAuth } from '@/lib/firebaseAdmin'
+
 export async function POST(req: Request) {
     try {
+      const authResult = await verifyAuth(req)
+      if ('error' in authResult) return Response.json({ error: authResult.error }, { status: 403 })
+
       const body = await req.json()
       const { messages, userData, checkins, baseline } = body
   

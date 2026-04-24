@@ -10,11 +10,17 @@ import {
   updateBaseline,
   getCombinedTrustScore,
 } from '@/lib/scoring'
+import { verifyAuth } from '@/lib/firebaseAdmin'
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
     const { userId, sleep, socialEnergy, pressure, ate, emotion, startTime, endTime } = body
+
+    if (!userId) return Response.json({ error: 'userId required' }, { status: 400 })
+
+    const authResult = await verifyAuth(req, userId)
+    if ('error' in authResult) return Response.json({ error: authResult.error }, { status: 403 })
 
     const date = new Date().toISOString().split('T')[0]
 
@@ -123,6 +129,9 @@ export async function GET(req: Request) {
     if (!userId) {
       return Response.json({ error: 'userId required' }, { status: 400 })
     }
+
+    const authResult = await verifyAuth(req, userId)
+    if ('error' in authResult) return Response.json({ error: authResult.error }, { status: 403 })
 
     const checkinsRef = collection(db, 'checkins')
 

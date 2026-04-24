@@ -58,18 +58,12 @@ export default function AdminDashboard() {
   }))
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const isAdmin = localStorage.getItem('mindstep_admin')
-      if (!isAdmin) {
-        router.push('/admin/login')
-      } else {
-        setAuthorized(true)
-      }
-    }
+    // Middleware handles auth, so we are authorized if we reach here
+    setAuthorized(true)
   }, [])
 
-  const handleSignOut = () => {
-    localStorage.removeItem('mindstep_admin')
+  const handleSignOut = async () => {
+    await fetch('/api/admin/logout', { method: 'POST' })
     router.push('/admin/login')
   }
 

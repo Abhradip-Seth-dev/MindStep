@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { auth } from '@/lib/firebase'
-import { onAuthStateChanged } from 'firebase/auth'
+import { useUser } from '@/lib/UserContext'
 import Sidebar from '@/components/Sidebar'
 
 const GAMES = [
@@ -97,8 +97,8 @@ const GAMES = [
 export default function GamesHub() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [userName, setUserName] = useState('')
-  const [userData, setUserData] = useState<any>(null)
+  const { user, userData, loading } = useUser()
+  const userName = user ? (user.displayName || user.email?.split('@')[0] || 'Student') : 'Student'
   const [hoveredGame, setHoveredGame] = useState<string | null>(null)
   const [recGameId, setRecGameId] = useState<string | null>(null)
   const [showRecBanner, setShowRecBanner] = useState(false)
@@ -115,17 +115,10 @@ export default function GamesHub() {
   }, [searchParams])
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (!firebaseUser) { router.push('/onboarding'); return }
-      setUserName(firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Student')
-      try {
-        const res = await fetch(`/api/user?firebaseUid=${firebaseUser.uid}`)
-        const ud = await res.json()
-        if (!ud.error) setUserData(ud)
-      } catch (e) { console.error(e) }
-    })
-    return () => unsub()
-  }, [])
+    if (!loading && !user) {
+      router.push('/onboarding')
+    }
+  }, [user, loading, router])
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#080C12' }}>

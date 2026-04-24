@@ -11,24 +11,29 @@ export default function AdminLogin() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setError('')
     setLoading(true)
 
-    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL
-    const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD
-
-    setTimeout(() => {
-      if (email === adminEmail && password === adminPassword) {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('mindstep_admin', 'true')
-        }
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
+      
+      const data = await res.json()
+      
+      if (res.ok && data.success) {
         router.push('/admin')
       } else {
-        setError('Invalid credentials. Access denied.')
+        setError(data.error || 'Invalid credentials. Access denied.')
       }
+    } catch (err) {
+      setError('Connection error. Please try again.')
+    } finally {
       setLoading(false)
-    }, 800)
+    }
   }
 
   const inputStyle = {

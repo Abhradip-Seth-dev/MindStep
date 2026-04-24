@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { auth } from '@/lib/firebase'
-import { onAuthStateChanged } from 'firebase/auth'
+import { useUser } from '@/lib/UserContext'
 import {
   AreaChart, Area, LineChart, Line,
   XAxis, YAxis, CartesianGrid,
@@ -17,11 +17,7 @@ import type { Engine } from '@tsparticles/engine'
 
 export default function Dashboard() {
   const router = useRouter()
-  const [user, setUser] = useState<any>(null)
-  const [userData, setUserData] = useState<any>(null)
-  const [baseline, setBaseline] = useState<any>(null)
-  const [checkins, setCheckins] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const { user, userData, baseline, checkins, loading } = useUser()
   const [driftStatus, setDriftStatus] = useState<'green' | 'amber' | 'red'>('green')
   const [particlesInit, setParticlesInit] = useState(false)
 
@@ -34,35 +30,18 @@ export default function Dashboard() {
   }, [])
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (!firebaseUser) {
-        router.push('/onboarding')
-        return
-      }
-      setUser(firebaseUser)
-      try {
-        const userRes = await fetch(`/api/user?firebaseUid=${firebaseUser.uid}`)
-        const ud = await userRes.json()
-        if (!ud.error) setUserData(ud)
+    if (!loading && !user) {
+      router.push('/onboarding')
+    }
+  }, [user, loading, router])
 
-        const baselineRes = await fetch(`/api/baseline?userId=${firebaseUser.uid}`)
-        const bd = await baselineRes.json()
-        if (bd.baseline) setBaseline(bd.baseline)
-        setCheckins(bd.recentCheckins || [])
-
-        if (bd.recentCheckins?.length > 0) {
-          const last3 = bd.recentCheckins.slice(-3)
-          if (last3.some((c: any) => c.status === 'red')) setDriftStatus('red')
-          else if (last3.some((c: any) => c.status === 'amber')) setDriftStatus('amber')
-        }
-      } catch (e) {
-        console.error(e)
-      } finally {
-        setLoading(false)
-      }
-    })
-    return () => unsub()
-  }, [])
+  useEffect(() => {
+    if (checkins.length > 0) {
+      const last3 = checkins.slice(-3)
+      if (last3.some((c: any) => c.status === 'red')) setDriftStatus('red')
+      else if (last3.some((c: any) => c.status === 'amber')) setDriftStatus('amber')
+    }
+  }, [checkins])
 
   const chartData = checkins.map((c: any, i: number) => ({
     day: `D${i + 1}`,

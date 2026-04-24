@@ -4,12 +4,21 @@ import {
   getDocs, doc, updateDoc, getDoc,
   orderBy, limit, onSnapshot,
 } from 'firebase/firestore'
+import { verifyAuth } from '@/lib/firebaseAdmin'
 
 // POST — create a peer request or send a message
 export async function POST(req: Request) {
   try {
     const body = await req.json()
     const { action } = body
+
+    if (body.userId) {
+      const authResult = await verifyAuth(req, body.userId)
+      if ('error' in authResult) return Response.json({ error: authResult.error }, { status: 403 })
+    } else {
+      const authResult = await verifyAuth(req)
+      if ('error' in authResult) return Response.json({ error: authResult.error }, { status: 403 })
+    }
 
     // Create a peer request (student needs support)
     if (action === 'request') {
@@ -160,6 +169,14 @@ export async function GET(req: Request) {
     const action = searchParams.get('action')
     const userId = searchParams.get('userId')
     const roomId = searchParams.get('roomId')
+
+    if (userId) {
+      const authResult = await verifyAuth(req, userId)
+      if ('error' in authResult) return Response.json({ error: authResult.error }, { status: 403 })
+    } else {
+      const authResult = await verifyAuth(req)
+      if ('error' in authResult) return Response.json({ error: authResult.error }, { status: 403 })
+    }
 
     if (action === 'status' && userId) {
       const requestsRef = collection(db, 'peer_requests')

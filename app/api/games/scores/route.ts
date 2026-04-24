@@ -3,6 +3,7 @@ import {
   collection, addDoc, query, where,
   getDocs, orderBy, limit, Timestamp,
 } from 'firebase/firestore'
+import { verifyAuth } from '@/lib/firebaseAdmin'
 
 export async function POST(req: Request) {
   try {
@@ -11,6 +12,9 @@ export async function POST(req: Request) {
     if (!userId || !gameId || score === undefined) {
       return Response.json({ error: 'userId, gameId and score required' }, { status: 400 })
     }
+
+    const authResult = await verifyAuth(req, userId)
+    if ('error' in authResult) return Response.json({ error: authResult.error }, { status: 403 })
 
     const now = new Date()
     const date = now.toISOString().split('T')[0]

@@ -3,6 +3,7 @@ import {
   doc, getDoc, collection, query,
   where, orderBy, limit, getDocs,
 } from 'firebase/firestore'
+import { verifyAuth } from '@/lib/firebaseAdmin'
 
 export async function GET(req: Request) {
   try {
@@ -12,6 +13,9 @@ export async function GET(req: Request) {
     if (!userId) {
       return Response.json({ error: 'userId required' }, { status: 400 })
     }
+
+    const authResult = await verifyAuth(req, userId)
+    if ('error' in authResult) return Response.json({ error: authResult.error }, { status: 403 })
 
     const baselineRef = doc(db, 'baselines', userId)
     const baselineSnap = await getDoc(baselineRef)

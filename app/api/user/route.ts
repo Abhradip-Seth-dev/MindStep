@@ -2,6 +2,7 @@ import { db } from '@/lib/firebase'
 import {
   doc, getDoc, setDoc, updateDoc,
 } from 'firebase/firestore'
+import { verifyAuth } from '@/lib/firebaseAdmin'
 
 export async function GET(req: Request) {
   try {
@@ -10,6 +11,11 @@ export async function GET(req: Request) {
 
     if (!firebaseUid) {
       return Response.json({ error: 'firebaseUid required' }, { status: 400 })
+    }
+
+    const authResult = await verifyAuth(req, firebaseUid)
+    if ('error' in authResult) {
+      return Response.json({ error: authResult.error }, { status: 403 })
     }
 
     const userRef = doc(db, 'users', firebaseUid)
@@ -29,6 +35,15 @@ export async function POST(req: Request) {
   try {
     const body = await req.json()
     const { firebaseUid, name, email, consentGiven } = body
+
+    if (!firebaseUid) {
+      return Response.json({ error: 'firebaseUid required' }, { status: 400 })
+    }
+
+    const authResult = await verifyAuth(req, firebaseUid)
+    if ('error' in authResult) {
+      return Response.json({ error: authResult.error }, { status: 403 })
+    }
 
     const userRef = doc(db, 'users', firebaseUid)
     const userSnap = await getDoc(userRef)
@@ -68,6 +83,11 @@ export async function PATCH(req: Request) {
 
     if (!firebaseUid) {
       return Response.json({ error: 'firebaseUid required' }, { status: 400 })
+    }
+
+    const authResult = await verifyAuth(req, firebaseUid)
+    if ('error' in authResult) {
+      return Response.json({ error: authResult.error }, { status: 403 })
     }
 
     const userRef = doc(db, 'users', firebaseUid)
