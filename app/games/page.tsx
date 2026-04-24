@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { auth } from '@/lib/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import Sidebar from '@/components/Sidebar'
@@ -96,9 +96,23 @@ const GAMES = [
 
 export default function GamesHub() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [userName, setUserName] = useState('')
   const [userData, setUserData] = useState<any>(null)
   const [hoveredGame, setHoveredGame] = useState<string | null>(null)
+  const [recGameId, setRecGameId] = useState<string | null>(null)
+  const [showRecBanner, setShowRecBanner] = useState(false)
+
+  useEffect(() => {
+    const rec = searchParams.get('rec')
+    if (rec) {
+      setRecGameId(rec)
+      setShowRecBanner(true)
+      // Auto-dismiss banner after 8s
+      const t = setTimeout(() => setShowRecBanner(false), 8000)
+      return () => clearTimeout(t)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -151,6 +165,75 @@ export default function GamesHub() {
           </p>
         </motion.div>
 
+        {/* Mood recommendation banner */}
+        <AnimatePresence>
+          {showRecBanner && recGameId && (() => {
+            const recGame = GAMES.find(g => g.id === recGameId)
+            if (!recGame) return null
+            return (
+              <motion.div
+                initial={{ opacity: 0, y: -12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.4 }}
+                style={{
+                  marginBottom: 24, padding: '16px 20px', borderRadius: 16,
+                  background: `linear-gradient(135deg, ${recGame.color}12, ${recGame.color}06)`,
+                  border: `1px solid ${recGame.color}30`,
+                  display: 'flex', alignItems: 'center', gap: 16,
+                }}
+              >
+                <div style={{
+                  width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                  background: `${recGame.color}15`,
+                  border: `1px solid ${recGame.color}30`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 20,
+                }}>
+                  {recGame.emoji}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                    <motion.div
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      style={{ width: 6, height: 6, borderRadius: '50%', background: recGame.color, flexShrink: 0 }}
+                    />
+                    <p style={{ fontSize: 12, fontWeight: 600, color: recGame.color }}>Aura recommends for your mood</p>
+                  </div>
+                  <p style={{ fontSize: 13, color: '#C8D4E0', fontWeight: 500 }}>
+                    {recGame.title} — {recGame.trains[0]} · {recGame.trains[1]}
+                  </p>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
+                  onClick={() => router.push(recGame.path)}
+                  style={{
+                    padding: '8px 18px', borderRadius: 10, border: 'none',
+                    background: `linear-gradient(135deg, ${recGame.color}, ${recGame.color}BB)`,
+                    color: '#080C12', fontSize: 12, fontWeight: 700,
+                    cursor: 'pointer', whiteSpace: 'nowrap',
+                    boxShadow: `0 4px 16px ${recGame.color}30`,
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  Play now →
+                </motion.button>
+                <button
+                  onClick={() => setShowRecBanner(false)}
+                  style={{
+                    background: 'none', border: 'none',
+                    color: '#3A4A5E', fontSize: 18, cursor: 'pointer',
+                    lineHeight: 1, padding: '0 4px', flexShrink: 0,
+                  }}
+                >
+                  ×
+                </button>
+              </motion.div>
+            )
+          })()}
+        </AnimatePresence>
+
         {/* Daily challenge banner */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -192,7 +275,9 @@ export default function GamesHub() {
 
         {/* Game cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 24 }}>
-          {GAMES.map((game, i) => (
+          {GAMES.map((game, i) => {
+            const isRecommended = game.id === recGameId
+            return (
             <motion.div
               key={game.id}
               initial={{ opacity: 0, y: 24 }}
@@ -204,9 +289,9 @@ export default function GamesHub() {
               style={{
                 padding: '32px', borderRadius: 20, cursor: 'pointer',
                 background: game.gradient,
-                border: `1px solid ${hoveredGame === game.id ? game.border : 'rgba(255,255,255,0.06)'}`,
+                border: `1px solid ${hoveredGame === game.id || isRecommended ? game.border : 'rgba(255,255,255,0.06)'}`,
                 transition: 'border 0.3s, box-shadow 0.3s, transform 0.2s',
-                boxShadow: hoveredGame === game.id ? `0 8px 40px ${game.glow}` : 'none',
+                boxShadow: hoveredGame === game.id || isRecommended ? `0 8px 40px ${game.glow}` : 'none',
                 transform: hoveredGame === game.id ? 'translateY(-4px)' : 'none',
                 position: 'relative', overflow: 'hidden',
               }}
@@ -218,6 +303,31 @@ export default function GamesHub() {
                 background: `radial-gradient(circle, ${game.color}18 0%, transparent 70%)`,
                 pointerEvents: 'none',
               }} />
+
+              {/* Recommended badge */}
+              {isRecommended && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  style={{
+                    position: 'absolute', top: 14, right: 14,
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    padding: '4px 10px', borderRadius: 20,
+                    background: `${game.color}20`,
+                    border: `1px solid ${game.color}50`,
+                    zIndex: 2,
+                  }}
+                >
+                  <motion.div
+                    animate={{ scale: [1, 1.4, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    style={{ width: 5, height: 5, borderRadius: '50%', background: game.color }}
+                  />
+                  <span style={{ fontSize: 9, color: game.color, fontWeight: 700, letterSpacing: '0.08em' }}>
+                    AURA PICK
+                  </span>
+                </motion.div>
+              )}
 
               {/* Emoji + difficulty */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
@@ -283,7 +393,8 @@ export default function GamesHub() {
                 Play Now →
               </motion.div>
             </motion.div>
-          ))}
+            )
+          })}
         </div>
 
         {/* Bottom note */}

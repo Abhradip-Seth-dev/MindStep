@@ -7,6 +7,141 @@ import { auth } from '@/lib/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import Sidebar from '@/components/Sidebar'
 
+// ── Mood-triggered game recommendation engine ──────────────────────────────
+const GAME_META: Record<string, { title: string; emoji: string; color: string; path: string; gradient: string; border: string }> = {
+  'memory-matrix': {
+    title: 'Memory Matrix', emoji: '🧩', color: '#5B9CF6',
+    path: '/games/memory-matrix',
+    gradient: 'linear-gradient(135deg, rgba(91,156,246,0.18), rgba(91,156,246,0.04))',
+    border: 'rgba(91,156,246,0.3)',
+  },
+  'focus-flow': {
+    title: 'Focus Flow', emoji: '🎯', color: '#4FC3A1',
+    path: '/games/focus-flow',
+    gradient: 'linear-gradient(135deg, rgba(79,195,161,0.18), rgba(79,195,161,0.04))',
+    border: 'rgba(79,195,161,0.3)',
+  },
+  'emotion-recall': {
+    title: 'Emotion Recall', emoji: '💭', color: '#A78BFA',
+    path: '/games/emotion-recall',
+    gradient: 'linear-gradient(135deg, rgba(167,139,250,0.18), rgba(167,139,250,0.04))',
+    border: 'rgba(167,139,250,0.3)',
+  },
+  'speed-math': {
+    title: 'Speed Math', emoji: '⚡', color: '#5B9CF6',
+    path: '/games/speed-math',
+    gradient: 'linear-gradient(135deg, rgba(91,156,246,0.18), rgba(91,156,246,0.04))',
+    border: 'rgba(91,156,246,0.3)',
+  },
+  'word-weaver': {
+    title: 'Word Weaver', emoji: '📝', color: '#E8A04A',
+    path: '/games/word-weaver',
+    gradient: 'linear-gradient(135deg, rgba(232,160,74,0.18), rgba(232,160,74,0.04))',
+    border: 'rgba(232,160,74,0.3)',
+  },
+  'pattern-pulse': {
+    title: 'Pattern Pulse', emoji: '🎵', color: '#A78BFA',
+    path: '/games/pattern-pulse',
+    gradient: 'linear-gradient(135deg, rgba(167,139,250,0.18), rgba(167,139,250,0.04))',
+    border: 'rgba(167,139,250,0.3)',
+  },
+}
+
+type Recommendation = {
+  gameId: string
+  reason: string
+  insight: string
+}
+
+function getGameRecommendation(answers: {
+  emotion: string
+  sleep: number
+  pressure: number
+  socialEnergy: number
+  ate: string
+}): Recommendation {
+  const { emotion, sleep, pressure } = answers
+
+  // Hard override: very low sleep → always Word Weaver (lowest cognitive demand)
+  if (sleep <= 3) {
+    return {
+      gameId: 'word-weaver',
+      reason: 'Your sleep was very low — Word Weaver is gentle on a tired mind.',
+      insight: 'Language games activate the brain without overwhelming it.',
+    }
+  }
+
+  // Hard override: very high pressure + not feeling good → Emotion Recall (calming)
+  if (pressure >= 8 && emotion !== 'Good') {
+    return {
+      gameId: 'emotion-recall',
+      reason: `High pressure detected — Emotion Recall helps you slow down and reset.`,
+      insight: 'Grounding exercises reduce cortisol and restore focus.',
+    }
+  }
+
+  // Emotion-based recommendations
+  switch (emotion) {
+    case 'Good':
+      // Peak state — push them hard
+      if (sleep >= 7) {
+        return {
+          gameId: 'speed-math',
+          reason: 'You\'re in a great state with solid sleep — the perfect time to push your limits.',
+          insight: 'Peak mood + good rest = your highest cognitive performance window.',
+        }
+      }
+      return {
+        gameId: 'memory-matrix',
+        reason: 'You\'re feeling good — a solid memory challenge to match your energy.',
+        insight: 'Working memory peaks when your mood is positive.',
+      }
+
+    case 'Okay':
+      return {
+        gameId: 'memory-matrix',
+        reason: 'A balanced state is great for focused memory training.',
+        insight: 'Neutral moods support steady, deliberate cognitive work.',
+      }
+
+    case 'Tired':
+      return {
+        gameId: 'word-weaver',
+        reason: 'Low effort, still stimulating — perfect for a tired brain.',
+        insight: 'Verbal fluency tasks drain less energy than pattern-based games.',
+      }
+
+    case 'Anxious':
+      return {
+        gameId: 'emotion-recall',
+        reason: 'Emotion Recall grounds you in the present moment — exactly what you need.',
+        insight: 'Mindful observation of emotions reduces anxiety signals in the brain.',
+      }
+
+    case 'Flat':
+      return {
+        gameId: 'pattern-pulse',
+        reason: 'Rhythmic and stimulating — Pattern Pulse will wake your brain up.',
+        insight: 'Sequential pattern games activate dopamine circuits and lift mood.',
+      }
+
+    case 'Overwhelmed':
+      return {
+        gameId: 'focus-flow',
+        reason: 'Simple, calming, one thing at a time. That\'s Focus Flow.',
+        insight: 'Directed attention exercises reduce cognitive overload within minutes.',
+      }
+
+    default:
+      return {
+        gameId: 'memory-matrix',
+        reason: 'A great all-round brain challenge for any mood.',
+        insight: 'Consistent memory training builds long-term cognitive resilience.',
+      }
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 const EMOTIONS = [
   { label: 'Good', color: '#4FC3A1', emoji: '😊' },
   { label: 'Okay', color: '#5B9CF6', emoji: '😐' },
@@ -96,6 +231,7 @@ export default function CheckIn() {
   })
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
+  const [showRecommendation, setShowRecommendation] = useState(false)
   const [alreadyDone, setAlreadyDone] = useState(false)
   const [submitError, setSubmitError] = useState('')
 
@@ -157,7 +293,8 @@ export default function CheckIn() {
         return
       }
       setDone(true)
-      setTimeout(() => router.push('/dashboard'), 2500)
+      // Phase 1: show success tick for 1.5s, then reveal recommendation
+      setTimeout(() => setShowRecommendation(true), 1500)
     } catch (err) {
       console.error(err)
       setSubmitError('Network error. Please check your connection.')
@@ -225,46 +362,207 @@ export default function CheckIn() {
   }
 
   if (done) {
+    const rec = getGameRecommendation(answers)
+    const game = GAME_META[rec.gameId]
+
     return (
       <div style={{ display: 'flex', minHeight: '100vh', background: '#080C12' }}>
+        {/* Ambient glow tied to recommended game color */}
+        <div style={{
+          position: 'fixed', top: '10%', right: '10%',
+          width: 600, height: 600, borderRadius: '50%',
+          background: `radial-gradient(circle, ${game.color}08 0%, transparent 70%)`,
+          pointerEvents: 'none', zIndex: 0,
+          transition: 'background 0.8s ease',
+        }} />
+
         <Sidebar userName={userName} userData={userData} />
         <main style={{
           flex: 1, marginLeft: '220px',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'relative', zIndex: 1,
         }}>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            style={{ textAlign: 'center' }}
-          >
-            <motion.div
-              animate={{ scale: [1, 1.08, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              style={{
-                width: 100, height: 100, borderRadius: '50%',
-                background: 'rgba(79,195,161,0.12)',
-                border: '1px solid rgba(79,195,161,0.4)',
-                display: 'flex', alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 28px',
-                boxShadow: '0 0 60px rgba(79,195,161,0.2)',
-              }}
-            >
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
-                stroke="#4FC3A1" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
-              </svg>
-            </motion.div>
-            <h2 style={{
-              fontSize: 36, fontFamily: 'Playfair Display, serif',
-              color: '#E8EEF5', marginBottom: 8,
-            }}>
-              Logged successfully
-            </h2>
-            <p style={{ fontSize: 14, color: '#5A6A7E' }}>
-              Taking you back to your dashboard...
-            </p>
-          </motion.div>
+          <AnimatePresence mode="wait">
+            {!showRecommendation ? (
+              /* ── Phase 1: Success tick ── */
+              <motion.div
+                key="success"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.85, y: -20, transition: { duration: 0.4 } }}
+                style={{ textAlign: 'center' }}
+              >
+                <motion.div
+                  animate={{ scale: [1, 1.08, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  style={{
+                    width: 100, height: 100, borderRadius: '50%',
+                    background: 'rgba(79,195,161,0.12)',
+                    border: '1px solid rgba(79,195,161,0.4)',
+                    display: 'flex', alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 28px',
+                    boxShadow: '0 0 60px rgba(79,195,161,0.2)',
+                  }}
+                >
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
+                    stroke="#4FC3A1" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+                  </svg>
+                </motion.div>
+                <h2 style={{
+                  fontSize: 36, fontFamily: 'Playfair Display, serif',
+                  color: '#E8EEF5', marginBottom: 8,
+                }}>
+                  Logged successfully
+                </h2>
+                <p style={{ fontSize: 14, color: '#5A6A7E' }}>
+                  Analysing your check-in...
+                </p>
+              </motion.div>
+            ) : (
+              /* ── Phase 2: Mood-triggered recommendation ── */
+              <motion.div
+                key="recommendation"
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+                style={{ textAlign: 'center', maxWidth: 480, padding: '0 24px' }}
+              >
+                {/* Header */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                >
+                  <p style={{
+                    fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase',
+                    color: game.color, fontWeight: 600, marginBottom: 10,
+                  }}>
+                    Aura recommends
+                  </p>
+                  <h2 style={{
+                    fontSize: 30, fontFamily: 'Playfair Display, serif',
+                    color: '#E8EEF5', marginBottom: 6, fontWeight: 600, lineHeight: 1.25,
+                  }}>
+                    Based on how you're feeling
+                  </h2>
+                  <p style={{ fontSize: 13, color: '#4A5A6E', lineHeight: 1.6, marginBottom: 32 }}>
+                    {rec.reason}
+                  </p>
+                </motion.div>
+
+                {/* Game card */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.2, duration: 0.4 }}
+                  style={{
+                    padding: '32px', borderRadius: 24,
+                    background: game.gradient,
+                    border: `1px solid ${game.border}`,
+                    marginBottom: 28, position: 'relative', overflow: 'hidden',
+                    boxShadow: `0 16px 60px ${game.color}20`,
+                  }}
+                >
+                  {/* Glow orb */}
+                  <div style={{
+                    position: 'absolute', top: -30, right: -30,
+                    width: 160, height: 160, borderRadius: '50%',
+                    background: `radial-gradient(circle, ${game.color}18 0%, transparent 70%)`,
+                    pointerEvents: 'none',
+                  }} />
+
+                  {/* Emotion badge */}
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '4px 12px', borderRadius: 20,
+                    background: `${game.color}15`,
+                    border: `1px solid ${game.color}30`,
+                    marginBottom: 20,
+                  }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: game.color }} />
+                    <span style={{ fontSize: 10, color: game.color, fontWeight: 600, letterSpacing: '0.1em' }}>
+                      {answers.emotion.toUpperCase()} MOOD
+                    </span>
+                  </div>
+
+                  {/* Game info */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
+                    <div style={{
+                      width: 64, height: 64, borderRadius: 16, flexShrink: 0,
+                      background: `${game.color}15`,
+                      border: `1px solid ${game.color}30`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 30,
+                    }}>
+                      {game.emoji}
+                    </div>
+                    <div style={{ textAlign: 'left' }}>
+                      <h3 style={{
+                        fontSize: 22, fontFamily: 'Playfair Display, serif',
+                        color: '#E8EEF5', marginBottom: 4, fontWeight: 600,
+                      }}>
+                        {game.title}
+                      </h3>
+                      <p style={{ fontSize: 12, color: '#5A6A7E', lineHeight: 1.5 }}>
+                        {rec.insight}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Play button */}
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => router.push(`${game.path}?rec=mood`)}
+                    style={{
+                      width: '100%', padding: '14px', borderRadius: 14, border: 'none',
+                      background: `linear-gradient(135deg, ${game.color}, ${game.color}BB)`,
+                      color: '#080C12', fontSize: 14, fontWeight: 700,
+                      cursor: 'pointer',
+                      boxShadow: `0 6px 24px ${game.color}40`,
+                      fontFamily: 'Inter, sans-serif',
+                    }}
+                  >
+                    Play {game.title} now →
+                  </motion.button>
+                </motion.div>
+
+                {/* Secondary action */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}
+                >
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => router.push(`/games?rec=${rec.gameId}`)}
+                    style={{
+                      padding: '10px 24px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)',
+                      background: 'rgba(255,255,255,0.03)',
+                      color: '#5A6A7E', fontSize: 13, cursor: 'pointer',
+                      fontFamily: 'Inter, sans-serif',
+                    }}
+                  >
+                    Browse all games
+                  </motion.button>
+                  <button
+                    onClick={() => router.push('/dashboard')}
+                    style={{
+                      background: 'none', border: 'none',
+                      fontSize: 12, color: '#3A4A5E',
+                      cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                    }}
+                  >
+                    Go to dashboard →
+                  </button>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </main>
       </div>
     )
