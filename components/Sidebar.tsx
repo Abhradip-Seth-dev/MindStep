@@ -51,6 +51,16 @@ const nav = [
     ),
   },
   {
+    id: 'garden',
+    label: 'Mind Garden',
+    path: '/garden',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1M4.22 4.22l.707.707M18.364 18.364l.707.707M1 12h1m20 0h1M4.22 19.78l.707-.707M18.364 5.636l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
+      </svg>
+    ),
+  },
+  {
     id: 'learn',
     label: 'Learn',
     path: '/learn',
