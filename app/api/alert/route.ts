@@ -1,5 +1,4 @@
-import { db } from '@/lib/firebase'
-import { doc, getDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebaseAdmin'
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -9,14 +8,13 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { userId, driftStatus } = body
 
-    const userRef = doc(db, 'users', userId)
-    const userSnap = await getDoc(userRef)
+    const userSnap = await db.collection('users').doc(userId).get()
 
-    if (!userSnap.exists()) {
+    if (!userSnap.exists) {
       return Response.json({ error: 'User not found' }, { status: 404 })
     }
 
-    const user = userSnap.data()
+    const user = userSnap.data() || {}
 
     if (driftStatus === 'red') {
       const emailBody = `

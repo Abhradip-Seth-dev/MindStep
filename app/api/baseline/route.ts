@@ -1,8 +1,4 @@
-import { db } from '@/lib/firebase'
-import {
-  doc, getDoc, collection, query,
-  where, orderBy, limit, getDocs,
-} from 'firebase/firestore'
+import { db } from '@/lib/firebaseAdmin'
 import { verifyAuth } from '@/lib/firebaseAdmin'
 
 export async function GET(req: Request) {
@@ -17,19 +13,13 @@ export async function GET(req: Request) {
     const authResult = await verifyAuth(req, userId)
     if ('error' in authResult) return Response.json({ error: authResult.error }, { status: 403 })
 
-    const baselineRef = doc(db, 'baselines', userId)
-    const baselineSnap = await getDoc(baselineRef)
+    const baselineSnap = await db.collection('baselines').doc(userId).get()
+    const baseline = baselineSnap.exists ? baselineSnap.data() : null
 
-    const baseline = baselineSnap.exists() ? baselineSnap.data() : null
-
-    const checkinsRef = collection(db, 'checkins')
-    const q = query(
-      checkinsRef,
-      where('userId', '==', userId),
-    
-      limit(14)
-    )
-    const snap = await getDocs(q)
+    const snap = await db.collection('checkins')
+      .where('userId', '==', userId)
+      .limit(14)
+      .get()
     const recentCheckins = snap.docs.map(d => ({ id: d.id, ...d.data() }))
 
     return Response.json({ baseline, recentCheckins })

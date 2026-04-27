@@ -1,9 +1,5 @@
-import { db } from '@/lib/firebase'
-import {
-  collection, addDoc, query, where,
-  getDocs, doc, getDoc, updateDoc,
-  setDoc, limit,
-} from 'firebase/firestore'
+import { db } from '@/lib/firebaseAdmin'
+import admin from 'firebase-admin'
 import {
   calculateStatus,
   detectDrift,
@@ -24,11 +20,8 @@ export async function POST(req: Request) {
 
     const date = new Date().toISOString().split('T')[0]
 
-    const checkinsRef = collection(db, 'checkins')
-
-    // Get recent checkins for variance/consistency analysis and existence check
-    const recentQ = query(checkinsRef, where('userId', '==', userId), limit(10))
-    const recentSnap = await getDocs(recentQ)
+    const checkinsRef = db.collection('checkins')
+    const recentSnap = await checkinsRef.where('userId', '==', userId).limit(10).get()
     const recentCheckins = recentSnap.docs.map(d => d.data()) as any[]
 
     // Check if already checked in today
@@ -37,10 +30,9 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Already checked in today' }, { status: 400 })
     }
 
-    // Get baseline
-    const baselineRef = doc(db, 'baselines', userId)
-    const baselineSnap = await getDoc(baselineRef)
-    const baseline = baselineSnap.exists() ? baselineSnap.data() : null
+    const baselineRef = db.collection('baselines').doc(userId)
+    const baselineSnap = await baselineRef.get()
+    const baseline = baselineSnap.exists ? baselineSnap.data() : null
 
     // Calculate trust score
     const checkinData = { sleep, socialEnergy, pressure, ate, emotion }
@@ -65,28 +57,27 @@ export async function POST(req: Request) {
       trustFlags: flags,
       timestamp: new Date().toISOString(),
     }
-    const docRef = await addDoc(checkinsRef, checkinDoc)
+    const docRef = await db.collection('checkins').add(checkinDoc)
 
     // Update baseline (trust-weighted)
     const updatedBaseline = updateBaseline(baseline as any, checkinData, trustScore)
-    await setDoc(baselineRef, {
+    await baselineRef.set({
       ...updatedBaseline,
       userId,
       lastUpdated: new Date().toISOString(),
     })
 
-    // Update streak
-    const userRef = doc(db, 'users', userId)
-    const userSnap = await getDoc(userRef)
-    if (userSnap.exists()) {
-      const user = userSnap.data()
+    const userRef = db.collection('users').doc(userId)
+    const userSnap = await userRef.get()
+    if (userSnap.exists) {
+      const user = userSnap.data()!
       const lastCheckIn = user.lastCheckIn
       const yesterday = new Date()
       yesterday.setDate(yesterday.getDate() - 1)
       const isConsecutive = lastCheckIn &&
         new Date(lastCheckIn).toISOString().split('T')[0] ===
         yesterday.toISOString().split('T')[0]
-      await updateDoc(userRef, {
+      await userRef.update({
         streak: isConsecutive ? (user.streak || 0) + 1 : 1,
         lastCheckIn: new Date().toISOString(),
       })
@@ -133,22 +124,10 @@ export async function GET(req: Request) {
     const authResult = await verifyAuth(req, userId)
     if ('error' in authResult) return Response.json({ error: authResult.error }, { status: 403 })
 
-    const checkinsRef = collection(db, 'checkins')
-
-    // Only query by userId to avoid composite index requirement
-    // Then filter by date in memory if needed
-    const q = query(
-      checkinsRef,
-      where('userId', '==', userId),
-      limit(limitNum)
-    )
-    const snap = await getDocs(q)
+    const checkinsRef = db.collection('checkins')
+    let snap = await checkinsRef.where('userId', '==', userId).limit(limitNum).get()
     let checkins = snap.docs.map(d => ({ id: d.id, ...d.data() as any }))
-
-    if (dateFilter) {
-      checkins = checkins.filter(c => c.date === dateFilter)
-    }
-
+    if (dateFilter) checkins = checkins.filter((c: any) => c.date === dateFilter)
     return Response.json(checkins)
   } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500 })

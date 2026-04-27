@@ -1,10 +1,12 @@
 'use client'
 
-import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/lib/UserContext'
 import Sidebar from '@/components/Sidebar'
+
+const AVATAR_EMOJIS = ['🧠','🌱','⚡','🎯','🔥','💎','🌙','🏆','🎮','🌊','🦋','🎵','✨','🌸','🧘']
 
 // ── XP helpers (mirrored from rewards) ────────────────────────────────────
 const XP_PER_LEVEL = 500
@@ -37,10 +39,22 @@ const ALL_BADGES = [
 export default function Profile() {
   const router = useRouter()
   const { user, userData, checkins, loading } = useUser()
-  const [name, setName] = useState(userData?.name || '')
-  const [notificationTime, setNotificationTime] = useState(userData?.notificationTime || '21:00')
+  const [name, setName] = useState('')
+  const [bio, setBio] = useState('')
+  const [avatarEmoji, setAvatarEmoji] = useState('')
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false)
+  const [notificationTime, setNotificationTime] = useState('21:00')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+
+  // Sync form fields once userData loads from Firebase (fixes stale-state after refresh)
+  useEffect(() => {
+    if (!userData) return
+    setName(userData.name || '')
+    setBio(userData.bio || '')
+    setAvatarEmoji(userData.avatarEmoji || '')
+    setNotificationTime(userData.notificationTime || '21:00')
+  }, [userData])
 
   const streak = userData?.streak ?? 0
   const totalCheckins = checkins.length
@@ -66,7 +80,7 @@ export default function Profile() {
       await fetch('/api/user', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firebaseUid: user.uid, name, notificationTime }),
+        body: JSON.stringify({ firebaseUid: user.uid, name, notificationTime, bio, avatarEmoji }),
       })
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
@@ -124,14 +138,44 @@ export default function Profile() {
                 style={{ position:'absolute', inset:-4, borderRadius:'50%', border:'2px solid transparent',
                   borderTopColor:levelColor, borderRightColor:`${levelColor}50` }} />
               <motion.div animate={{ scale:[1,1.04,1] }} transition={{ duration:4, repeat:Infinity }}
-                style={{ width:88, height:88, borderRadius:'50%',
+                onClick={() => setShowAvatarPicker(p => !p)}
+                style={{ width:88, height:88, borderRadius:'50%', cursor:'pointer',
                   background:`linear-gradient(135deg, ${levelColor}30, rgba(8,12,18,0.8))`,
                   border:`1px solid ${levelColor}50`,
                   display:'flex', alignItems:'center', justifyContent:'center',
-                  fontSize:36, fontWeight:700, color:levelColor, fontFamily:'Playfair Display, serif',
-                  boxShadow:`0 0 32px ${levelColor}30` }}>
-                {displayName[0]?.toUpperCase()}
+                  fontSize: avatarEmoji ? 42 : 36, fontWeight:700, color:levelColor,
+                  fontFamily:'Playfair Display, serif', boxShadow:`0 0 32px ${levelColor}30` }}
+                title="Click to change avatar">
+                {avatarEmoji || displayName[0]?.toUpperCase()}
               </motion.div>
+              <AnimatePresence>
+                {showAvatarPicker && (
+                  <motion.div initial={{ opacity:0, scale:0.9, y:8 }} animate={{ opacity:1, scale:1, y:0 }} exit={{ opacity:0, scale:0.9 }}
+                    style={{ position:'absolute', top:100, left:0, zIndex:50, padding:12, borderRadius:16,
+                      background:'#111824', border:'1px solid rgba(255,255,255,0.1)', boxShadow:'0 16px 40px rgba(0,0,0,0.5)',
+                      display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:6, width:200 }}>
+                    {AVATAR_EMOJIS.map(em => (
+                      <motion.button key={em} whileHover={{ scale:1.2 }} whileTap={{ scale:0.9 }}
+                        onClick={() => { setAvatarEmoji(em); setShowAvatarPicker(false) }}
+                        style={{ fontSize:24, background: avatarEmoji===em ? `${levelColor}20` : 'transparent',
+                          border: avatarEmoji===em ? `1px solid ${levelColor}50` : '1px solid transparent',
+                          borderRadius:8, padding:4, cursor:'pointer' }}>
+                        {em}
+                      </motion.button>
+                    ))}
+                    <motion.button whileHover={{ scale:1.1 }} onClick={() => { setAvatarEmoji(''); setShowAvatarPicker(false) }}
+                      style={{ gridColumn:'span 5', fontSize:10, color:'#5A6A7E', background:'transparent',
+                        border:'1px solid rgba(255,255,255,0.06)', borderRadius:8, padding:'4px 8px', cursor:'pointer',
+                        marginTop:4 }}>
+                      Reset to initials
+                    </motion.button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <div style={{ position:'absolute', bottom:0, right:0, width:24, height:24, borderRadius:'50%',
+                background:levelColor, display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:11, color:'#080C12', fontWeight:700, border:'2px solid #080C12', cursor:'pointer' }}
+                onClick={() => setShowAvatarPicker(p => !p)}>✏️</div>
             </div>
             {/* Name & info */}
             <div style={{ flex:1 }}>
@@ -144,7 +188,8 @@ export default function Profile() {
                   <span style={{ fontSize:10, color:'#4FC3A1', fontWeight:600 }}>Active</span>
                 </div>
               </div>
-              <p style={{ fontSize:13, color:'#4A5A6E', marginBottom:12 }}>{user?.email}</p>
+              <p style={{ fontSize:13, color:'#4A5A6E', marginBottom:4 }}>{user?.email}</p>
+              {bio && <p style={{ fontSize:13, color:'#8B9BB0', lineHeight:1.5, marginBottom:8, maxWidth:400, fontStyle:'italic' }}>"{bio}"</p>}
               <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
                 <span style={{ fontSize:13, fontWeight:600, color:levelColor, padding:'4px 12px', borderRadius:20,
                   background:`${levelColor}15`, border:`1px solid ${levelColor}30` }}>
@@ -221,6 +266,49 @@ export default function Profile() {
           </div>
         </motion.div>
 
+        {/* ── RECENT ACTIVITY ─────────────────────────────────────── */}
+        {checkins.length > 0 && (
+          <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.18 }}
+            style={{ padding:'22px 28px', borderRadius:18, marginBottom:16,
+              background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.07)' }}>
+            <p style={{ fontSize:10, letterSpacing:'0.18em', textTransform:'uppercase', color:'#3A4A5E', fontWeight:600, marginBottom:14 }}>Recent Check-ins</p>
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {checkins.slice(-5).reverse().map((c:any, i:number) => {
+                const sc = c.status==='red'?'#E05C5C':c.status==='amber'?'#E8A04A':'#4FC3A1'
+                const emojiMap: Record<string,string> = { Good:'😊', Okay:'😐', Tired:'😴', Anxious:'😰', Flat:'😶', Overwhelmed:'😵' }
+                return (
+                  <motion.div key={i} initial={{ opacity:0, x:-8 }} animate={{ opacity:1, x:0 }} transition={{ delay:0.2+i*0.05 }}
+                    style={{ display:'flex', alignItems:'center', gap:14, padding:'12px 16px', borderRadius:12,
+                      background:`${sc}06`, border:`1px solid ${sc}18` }}>
+                    <div style={{ width:36, height:36, borderRadius:'50%', background:`${sc}15`, border:`1px solid ${sc}30`,
+                      display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0 }}>
+                      {emojiMap[c.emotion] || '📋'}
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:2 }}>
+                        <span style={{ fontSize:12, fontWeight:600, color:'#C8D4E0' }}>{c.emotion || 'Check-in'}</span>
+                        <span style={{ fontSize:10, padding:'1px 8px', borderRadius:10, background:`${sc}15`, color:sc, fontWeight:600 }}>{c.status}</span>
+                      </div>
+                      <span style={{ fontSize:11, color:'#3A4A5E' }}>{c.date}</span>
+                    </div>
+                    <div style={{ display:'flex', gap:16, flexShrink:0 }}>
+                      {[['🌙', c.sleep], ['👥', c.socialEnergy], ['📚', c.pressure]].map(([icon, val]) => (
+                        <div key={icon as string} style={{ textAlign:'center' }}>
+                          <div style={{ fontSize:13 }}>{icon}</div>
+                          <div style={{ fontSize:12, fontWeight:600, color:'#8B9BB0' }}>{val}/10</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ padding:'4px 10px', borderRadius:8, background:'rgba(167,139,250,0.1)', border:'1px solid rgba(167,139,250,0.2)', flexShrink:0 }}>
+                      <span style={{ fontSize:11, color:'#A78BFA', fontWeight:600 }}>+50 XP</span>
+                    </div>
+                  </motion.div>
+                )
+              })}
+            </div>
+          </motion.div>
+        )}
+
         {/* ── EDIT + PRIVACY ──────────────────────────────────────── */}
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
 
@@ -236,6 +324,12 @@ export default function Profile() {
               <input style={inputStyle} value={name} onChange={e=>setName(e.target.value)} placeholder="Your full name"
                 onFocus={e=>(e.target.style.borderColor='rgba(79,195,161,0.4)')}
                 onBlur={e=>(e.target.style.borderColor='rgba(255,255,255,0.08)')} />
+            </div>
+            <div style={{ marginBottom:14 }}>
+              <label style={{ fontSize:10, letterSpacing:'0.12em', textTransform:'uppercase', color:'#3A4A5E', fontWeight:600, display:'block', marginBottom:6 }}>Bio</label>
+              <textarea style={{ ...inputStyle, height:72, resize:'none' }} value={bio} onChange={e=>setBio(e.target.value)} placeholder="A few words about yourself…"
+                onFocus={e=>(e.currentTarget.style.borderColor='rgba(79,195,161,0.4)')}
+                onBlur={e=>(e.currentTarget.style.borderColor='rgba(255,255,255,0.08)')} />
             </div>
             <div style={{ marginBottom:14 }}>
               <label style={{ fontSize:10, letterSpacing:'0.12em', textTransform:'uppercase', color:'#3A4A5E', fontWeight:600, display:'block', marginBottom:6 }}>Email</label>

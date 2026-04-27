@@ -50,11 +50,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const unsub = onIdTokenChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         const token = await firebaseUser.getIdToken()
-        document.cookie = `mindstep_auth_token=${token}; path=/; max-age=3600; SameSite=Lax`
+        await fetch('/api/auth/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token })
+        })
         setUser(firebaseUser)
         await fetchData(firebaseUser)
       } else {
-        document.cookie = `mindstep_auth_token=; path=/; max-age=0; SameSite=Lax`
+        await fetch('/api/auth/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: null })
+        })
         setUser(null)
         setUserData(null)
         setBaseline(null)

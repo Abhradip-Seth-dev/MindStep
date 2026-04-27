@@ -1,9 +1,4 @@
-import { db } from '@/lib/firebase'
-import {
-  collection, addDoc, query, where,
-  getDocs, doc, updateDoc, getDoc,
-  orderBy, limit, onSnapshot,
-} from 'firebase/firestore'
+import { db } from '@/lib/firebaseAdmin'
 import { verifyAuth } from '@/lib/firebaseAdmin'
 
 // POST — create a peer request or send a message
@@ -20,139 +15,79 @@ export async function POST(req: Request) {
       if ('error' in authResult) return Response.json({ error: authResult.error }, { status: 403 })
     }
 
-    // Create a peer request (student needs support)
     if (action === 'request') {
       const { userId, userName, course, semester } = body
+      const requestsRef = db.collection('peer_requests')
 
-      // Check if already has an active request
-      const requestsRef = collection(db, 'peer_requests')
-      const existingQ = query(
-        requestsRef,
-        where('userId', '==', userId),
-        where('status', '==', 'waiting')
-      )
-      const existingSnap = await getDocs(existingQ)
+      const existingSnap = await requestsRef
+        .where('userId', '==', userId).where('status', '==', 'waiting').get()
       if (!existingSnap.empty) {
-        return Response.json({
-          success: true,
-          requestId: existingSnap.docs[0].id,
-          status: 'waiting',
-        })
+        return Response.json({ success: true, requestId: existingSnap.docs[0].id, status: 'waiting' })
       }
 
-      // Find an available supporter
-      const supporterQ = query(
-        requestsRef,
-        where('status', '==', 'available'),
-        where('userId', '!=', userId),
-        limit(1)
-      )
-      const supporterSnap = await getDocs(supporterQ)
+      const supporterSnap = await requestsRef
+        .where('status', '==', 'available').where('userId', '!=', userId).limit(1).get()
 
       if (!supporterSnap.empty) {
-        // Match found — create a room
         const supporter = supporterSnap.docs[0]
         const roomId = `room_${Date.now()}`
-
-        // Create chat room
-        await addDoc(collection(db, 'peer_rooms'), {
+        await db.collection('peer_rooms').add({
           roomId,
           student: { userId, userName: userName || 'Anonymous', course, semester },
           supporter: { userId: supporter.data().userId, userName: 'Peer Supporter' },
-          createdAt: new Date().toISOString(),
-          status: 'active',
+          createdAt: new Date().toISOString(), status: 'active',
         })
-
-        // Update supporter status
-        await updateDoc(doc(db, 'peer_requests', supporter.id), {
-          status: 'matched', roomId,
+        await requestsRef.doc(supporter.id).update({ status: 'matched', roomId })
+        const reqDoc = await requestsRef.add({
+          userId, userName: userName || 'Anonymous', course, semester,
+          status: 'matched', roomId, createdAt: new Date().toISOString(), role: 'student',
         })
-
-        // Create student request
-        const reqDoc = await addDoc(requestsRef, {
-          userId, userName: userName || 'Anonymous',
-          course, semester,
-          status: 'matched', roomId,
-          createdAt: new Date().toISOString(),
-          role: 'student',
-        })
-
         return Response.json({ success: true, requestId: reqDoc.id, roomId, status: 'matched' })
       }
 
-      // No supporter available — add to waiting list
-      const reqDoc = await addDoc(requestsRef, {
-        userId, userName: userName || 'Anonymous',
-        course, semester,
-        status: 'waiting',
-        createdAt: new Date().toISOString(),
-        role: 'student',
+      const reqDoc = await requestsRef.add({
+        userId, userName: userName || 'Anonymous', course, semester,
+        status: 'waiting', createdAt: new Date().toISOString(), role: 'student',
       })
-
       return Response.json({ success: true, requestId: reqDoc.id, status: 'waiting' })
     }
 
-    // Register as supporter
     if (action === 'support') {
       const { userId, userName } = body
+      const requestsRef = db.collection('peer_requests')
 
-      const requestsRef = collection(db, 'peer_requests')
-
-      // Check for waiting students
-      const waitingQ = query(
-        requestsRef,
-        where('status', '==', 'waiting'),
-        where('userId', '!=', userId),
-        limit(1)
-      )
-      const waitingSnap = await getDocs(waitingQ)
+      const waitingSnap = await requestsRef
+        .where('status', '==', 'waiting').where('userId', '!=', userId).limit(1).get()
 
       if (!waitingSnap.empty) {
         const waiting = waitingSnap.docs[0]
         const roomId = `room_${Date.now()}`
-
-        await addDoc(collection(db, 'peer_rooms'), {
+        await db.collection('peer_rooms').add({
           roomId,
           student: { userId: waiting.data().userId, userName: waiting.data().userName || 'Anonymous' },
           supporter: { userId, userName: userName || 'Peer Supporter' },
-          createdAt: new Date().toISOString(),
-          status: 'active',
+          createdAt: new Date().toISOString(), status: 'active',
         })
-
-        await updateDoc(doc(db, 'peer_requests', waiting.id), {
-          status: 'matched', roomId,
-        })
-
-        const reqDoc = await addDoc(requestsRef, {
+        await requestsRef.doc(waiting.id).update({ status: 'matched', roomId })
+        const reqDoc = await requestsRef.add({
           userId, userName: userName || 'Peer Supporter',
-          status: 'matched', roomId,
-          createdAt: new Date().toISOString(),
-          role: 'supporter',
+          status: 'matched', roomId, createdAt: new Date().toISOString(), role: 'supporter',
         })
-
         return Response.json({ success: true, requestId: reqDoc.id, roomId, status: 'matched' })
       }
 
-      // No waiting students — mark as available
-      const reqDoc = await addDoc(requestsRef, {
+      const reqDoc = await requestsRef.add({
         userId, userName: userName || 'Peer Supporter',
-        status: 'available',
-        createdAt: new Date().toISOString(),
-        role: 'supporter',
+        status: 'available', createdAt: new Date().toISOString(), role: 'supporter',
       })
-
       return Response.json({ success: true, requestId: reqDoc.id, status: 'available' })
     }
 
-    // Send a message
     if (action === 'message') {
       const { roomId, userId, text, senderRole } = body
-
-      const msgDoc = await addDoc(collection(db, 'peer_messages'), {
-        roomId, userId, text, senderRole,
-        timestamp: new Date().toISOString(),
+      const msgDoc = await db.collection('peer_messages').add({
+        roomId, userId, text, senderRole, timestamp: new Date().toISOString(),
       })
-
       return Response.json({ success: true, messageId: msgDoc.id })
     }
 
@@ -179,33 +114,23 @@ export async function GET(req: Request) {
     }
 
     if (action === 'status' && userId) {
-      const requestsRef = collection(db, 'peer_requests')
-      const q = query(
-        requestsRef,
-        where('userId', '==', userId),
-        limit(1)
-      )
-      const snap = await getDocs(q)
+      const snap = await db.collection('peer_requests').where('userId', '==', userId).limit(1).get()
       if (snap.empty) return Response.json({ status: 'none' })
-      return Response.json({ status: snap.docs[0].data().status, roomId: snap.docs[0].data().roomId, requestId: snap.docs[0].id })
+      return Response.json({
+        status: snap.docs[0].data().status,
+        roomId: snap.docs[0].data().roomId,
+        requestId: snap.docs[0].id,
+      })
     }
 
     if (action === 'messages' && roomId) {
-      const messagesRef = collection(db, 'peer_messages')
-      const q = query(
-        messagesRef,
-        where('roomId', '==', roomId),
-        orderBy('timestamp', 'asc')
-      )
-      const snap = await getDocs(q)
-      const messages = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      return Response.json(messages)
+      const snap = await db.collection('peer_messages')
+        .where('roomId', '==', roomId).orderBy('timestamp', 'asc').get()
+      return Response.json(snap.docs.map(d => ({ id: d.id, ...d.data() })))
     }
 
     if (action === 'room' && roomId) {
-      const roomsRef = collection(db, 'peer_rooms')
-      const q = query(roomsRef, where('roomId', '==', roomId), limit(1))
-      const snap = await getDocs(q)
+      const snap = await db.collection('peer_rooms').where('roomId', '==', roomId).limit(1).get()
       if (snap.empty) return Response.json({ error: 'Room not found' }, { status: 404 })
       return Response.json({ id: snap.docs[0].id, ...snap.docs[0].data() })
     }
