@@ -7,17 +7,69 @@ import { useUser } from '@/lib/UserContext'
 import Sidebar from '@/components/Sidebar'
 
 // ── helpers ────────────────────────────────────────────────────────────────
-function getGardenState(checkins: any[], streak: number) {
-  if (checkins.length === 0) return 'empty'
-  const last3 = checkins.slice(-3)
-  const avgScore = last3.reduce((s: number, c: any) => {
-    const score = ((c.sleep ?? 5) + (c.socialEnergy ?? 5) + (10 - (c.pressure ?? 5))) / 3
-    return s + score
-  }, 0) / last3.length
-  if (avgScore >= 7) return 'blooming'
-  if (avgScore >= 5) return 'growing'
-  if (avgScore >= 3) return 'cloudy'
+/**
+ * Computes garden state using a two-layer approach:
+ *  1. LONG-TERM score: baseline averages (reflects overall trajectory)
+ *  2. SHORT-TERM score: last 7 days average (reflects recent mood)
+ *
+ * The final state is the long-term score, dampened slightly by the short-term.
+ * A bad week can shift state down by ONE level at most — it cannot destroy a
+ * healthy garden that took months to build.
+ */
+function computeScore(checkins: any[], days: number): number {
+  if (checkins.length === 0) return 5
+  const slice = checkins.slice(-days)
+  return slice.reduce((sum: number, c: any) => {
+    return sum + ((c.sleep ?? 5) + (c.socialEnergy ?? 5) + (10 - (c.pressure ?? 5))) / 3
+  }, 0) / slice.length
+}
+
+function scoreToState(score: number): 'blooming' | 'growing' | 'cloudy' | 'wilting' {
+  if (score >= 7) return 'blooming'
+  if (score >= 5) return 'growing'
+  if (score >= 3) return 'cloudy'
   return 'wilting'
+}
+
+const STATE_ORDER = ['wilting', 'cloudy', 'growing', 'blooming'] as const
+
+function getGardenState(
+  checkins: any[],
+  streak: number,
+  baseline: any | null
+): 'empty' | 'blooming' | 'growing' | 'cloudy' | 'wilting' {
+  if (checkins.length === 0) return 'empty'
+
+  // ── Long-term score: prefer baseline averages if established ──────────────
+  let longTermScore: number
+  if (baseline && baseline.totalDays >= 7) {
+    // Composite from baseline averages (same formula as checkin scoring)
+    longTermScore = ((baseline.avgSleep ?? 5) + (baseline.avgSocialEnergy ?? 5) + (10 - (baseline.avgPressure ?? 5))) / 3
+  } else {
+    // Fallback: rolling 30-day score (or all available)
+    longTermScore = computeScore(checkins, 30)
+  }
+
+  const longTermState = scoreToState(longTermScore)
+  const longTermIdx = STATE_ORDER.indexOf(longTermState)
+
+  // ── Short-term score: last 7 days ─────────────────────────────────────────
+  const shortTermScore = computeScore(checkins, 7)
+  const shortTermState = scoreToState(shortTermScore)
+  const shortTermIdx = STATE_ORDER.indexOf(shortTermState)
+
+  // ── Clamp: short-term dips can only shift state DOWN by 1 level max ───────
+  // Positive moods can also boost 1 level up from baseline
+  const finalIdx = Math.min(
+    longTermIdx + 1,           // cap: can improve at most 1 level in short-term
+    Math.max(longTermIdx - 1,  // floor: can fall at most 1 level in short-term
+    shortTermIdx)
+  )
+
+  // Bonus: a long streak (14+ days) protects against 1 level of degradation
+  const streakProtected = streak >= 14 ? Math.max(finalIdx, longTermIdx) : finalIdx
+
+  return STATE_ORDER[Math.max(0, Math.min(3, streakProtected))]
 }
 
 function getPlantCount(checkins: any[]) { return Math.min(checkins.length, 30) }
@@ -204,7 +256,7 @@ const stateInfo: Record<string, { title: string; subtitle: string; color: string
 // ── Main Page ───────────────────────────────────────────────────────────────
 export default function MindGarden() {
   const router = useRouter()
-  const { user, userData, checkins, loading } = useUser()
+  const { user, userData, checkins, baseline, loading } = useUser()
   const [tooltip, setTooltip] = useState<{ checkin: any; idx: number } | null>(null)
 
   useEffect(() => {
@@ -212,7 +264,7 @@ export default function MindGarden() {
   }, [user, loading, router])
 
   const streak = userData?.streak ?? 0
-  const state = getGardenState(checkins, streak)
+  const state = getGardenState(checkins, streak, baseline)
   const plantCount = getPlantCount(checkins)
   const info = stateInfo[state]
 

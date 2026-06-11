@@ -161,6 +161,14 @@ export async function PUT(req: Request) {
       }
     }
 
+    // Report / flag a confession
+    if (action === 'report') {
+      await docRef.update({
+        reports: admin.firestore.FieldValue.increment(1),
+      })
+      return NextResponse.json({ success: true, action: 'reported' })
+    }
+
     // Fetch comments for a confession
     if (action === 'getComments') {
       const commentsSnap = await docRef.collection('comments').orderBy('createdAt', 'asc').get()

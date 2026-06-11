@@ -64,25 +64,26 @@ const steps = [
 
 const inputStyle = {
   width: '100%',
-  padding: '12px 16px',
-  borderRadius: 12,
-  background: 'rgba(255,255,255,0.04)',
+  padding: '16px 20px',
+  borderRadius: 14,
+  background: 'rgba(255,255,255,0.03)',
   border: '1px solid rgba(255,255,255,0.08)',
   color: '#E8EEF5',
-  fontSize: 13,
+  fontSize: 14,
   outline: 'none',
   fontFamily: 'Inter, sans-serif',
-  transition: 'border-color 0.2s',
+  transition: 'all 0.3s ease',
   appearance: 'none' as const,
+  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)',
 }
 
 const labelStyle = {
   display: 'block' as const,
-  fontSize: 11,
-  letterSpacing: '0.12em',
+  fontSize: 12,
+  letterSpacing: '0.1em',
   textTransform: 'uppercase' as const,
-  color: '#3A4A5E',
-  marginBottom: 6,
+  color: '#8B9BB0',
+  marginBottom: 8,
   fontWeight: 600,
 }
 
@@ -211,16 +212,13 @@ export default function Onboarding() {
         hostel: studentType === 'hosteller' ? hostel : '',
       }
   
-      console.log('Saving university info:', payload) // debug
-  
       const res = await fetch('/api/user', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
   
-      const data = await res.json()
-      console.log('Response:', data) // debug
+      await res.json()
   
       setStep(4)
     } catch (err: any) {
@@ -267,23 +265,40 @@ export default function Onboarding() {
       <div className="fixed bottom-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full"
         style={{ background: 'radial-gradient(circle, rgba(91,156,246,0.06) 0%, transparent 70%)' }} />
 
-      <div className="w-full relative z-10" style={{ maxWidth: 480 }}>
+      <div className="w-full relative z-10" style={{ maxWidth: 520 }}>
 
         {/* Step indicators */}
-        <div className="flex items-center justify-center gap-2 mb-10">
+        <div className="flex items-center justify-center gap-2 mb-12">
           {steps.map((s) => (
-            <motion.div
-              key={s.id}
-              animate={{
-                width: step === s.id ? 32 : 6,
-                opacity: step >= s.id ? 1 : 0.3,
-              }}
-              transition={{ duration: 0.3 }}
-              className="h-[6px] rounded-full"
-              style={{ background: step >= s.id ? '#4FC3A1' : '#1E2A38' }}
-            />
+            <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <motion.div
+                animate={{
+                  width: step === s.id ? 40 : 12,
+                  backgroundColor: step >= s.id ? '#4FC3A1' : '#1E2A38',
+                  boxShadow: step >= s.id ? '0 0 12px rgba(79,195,161,0.5)' : 'none',
+                }}
+                transition={{ duration: 0.4, type: 'spring' }}
+                className="h-[6px] rounded-full"
+              />
+            </div>
           ))}
         </div>
+
+        <motion.div
+          style={{
+            background: 'rgba(8, 12, 18, 0.6)',
+            backdropFilter: 'blur(32px)',
+            WebkitBackdropFilter: 'blur(32px)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            borderRadius: 32,
+            padding: '48px 40px',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          {/* Subtle inner highlight */}
+          <div style={{ position: 'absolute', top: 0, left: '20%', right: '20%', height: 1, background: 'linear-gradient(90deg, transparent, rgba(79,195,161,0.3), transparent)' }} />
 
         <AnimatePresence mode="wait">
 
@@ -422,19 +437,22 @@ export default function Onboarding() {
 
               {/* Google */}
               <motion.button
-                whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+                whileHover={{ scale: 1.02, background: 'rgba(255,255,255,0.08)' }}
+                whileTap={{ scale: 0.98 }}
                 onClick={handleGoogleSignIn}
                 disabled={loading}
                 style={{
-                  width: '100%', padding: '14px', borderRadius: 16,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: '#E8EEF5', fontSize: 14, cursor: 'pointer',
-                  fontFamily: 'Inter, sans-serif', marginBottom: 16,
+                  width: '100%', padding: '16px', borderRadius: 16,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  color: '#E8EEF5', fontSize: 15, fontWeight: 500, cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif', marginBottom: 24,
+                  transition: 'background 0.2s',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                 }}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24">
+                <svg width="20" height="20" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -461,8 +479,8 @@ export default function Onboarding() {
                     onChange={(e) => field.setter(e.target.value)}
                     placeholder={field.placeholder}
                     style={inputStyle}
-                    onFocus={(e) => e.target.style.borderColor = 'rgba(79,195,161,0.4)'}
-                    onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
+                    onFocus={(e) => { e.target.style.borderColor = 'rgba(79,195,161,0.6)'; e.target.style.boxShadow = '0 0 12px rgba(79,195,161,0.2)' }}
+                    onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.08)'; e.target.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.2)' }}
                   />
                 </div>
               ))}
@@ -778,6 +796,7 @@ export default function Onboarding() {
           )}
 
         </AnimatePresence>
+        </motion.div>
       </div>
     </div>
   )

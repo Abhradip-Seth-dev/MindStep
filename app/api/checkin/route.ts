@@ -11,7 +11,7 @@ import { verifyAuth } from '@/lib/firebaseAdmin'
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { userId, sleep, socialEnergy, pressure, ate, emotion, startTime, endTime } = body
+    const { userId, sleep, socialEnergy, pressure, ate, emotion, notes, startTime, endTime } = body
 
     if (!userId) return Response.json({ error: 'userId required' }, { status: 400 })
 
@@ -43,19 +43,23 @@ export async function POST(req: Request) {
       endTime
     )
 
-    console.log(`Trust score for ${userId}: ${trustScore.toFixed(2)} (${trustLevel}) flags: ${flags.join(', ') || 'none'}`)
+    // Removed log for production
 
     // Calculate status with trust awareness
     const status = calculateStatus(checkinData, baseline as any, trustScore)
 
     // Save checkin with trust metadata 
-    const checkinDoc = {
+    const checkinDoc: any = {
       userId, date, sleep, socialEnergy,
       pressure, ate, emotion, status,
       trustScore: Math.round(trustScore * 100) / 100,
       trustLevel,
       trustFlags: flags,
       timestamp: new Date().toISOString(),
+    }
+    // Only save notes if the user wrote something
+    if (notes && typeof notes === 'string' && notes.trim().length > 0) {
+      checkinDoc.notes = notes.trim().slice(0, 200)
     }
     const docRef = await db.collection('checkins').add(checkinDoc)
 

@@ -21,7 +21,8 @@ export function middleware(request: NextRequest) {
   // List of protected student routes
   const protectedStudentRoutes = [
     '/dashboard', '/checkin', '/companion', '/games',
-    '/profile', '/history', '/peer', '/heatmap', '/rewards', '/garden'
+    '/profile', '/history', '/peer', '/heatmap', '/rewards', '/garden',
+    '/community', '/learn',
   ]
 
   // Check if the current path is a protected student route
@@ -53,6 +54,8 @@ export const config = {
     '/peer/:path*',
     '/heatmap/:path*',
     '/rewards/:path*',
-    '/garden/:path*'
+    '/garden/:path*',
+    '/community/:path*',
+    '/learn/:path*',
   ],
 }

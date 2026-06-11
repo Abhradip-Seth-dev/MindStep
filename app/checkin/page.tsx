@@ -66,6 +66,7 @@ const QUESTIONS = [
   { id: 'pressure', number: '03', label: 'Academic Pressure', question: 'How much pressure did you feel today?', hint: 'Deadlines, exams, assignments — how heavy did it feel?', type: 'slider', low: 'None', high: 'Crushing', reverse: true },
   { id: 'ate', number: '04', label: 'Nutrition', question: 'Did you eat properly today?', hint: 'Regular meals matter more than you think for your mood.', type: 'toggle' },
   { id: 'emotion', number: '05', label: 'Current Emotion', question: 'How do you feel right now, in this moment?', hint: 'Pick the one that fits closest. There are no wrong answers.', type: 'emotion' },
+  { id: 'notes', number: '06', label: 'One Sentence', question: 'Anything you want Aura to know?', hint: 'Optional — one sentence about your day, a worry, or something good that happened.', type: 'notes' },
 ]
 
 // ── Main Component ────────────────────────────────────────────────────────
@@ -74,7 +75,7 @@ export default function CheckIn() {
   const { user, userData, loading } = useUser()
   const [currentQ, setCurrentQ] = useState(0)
   const [startTime] = useState(() => Date.now())
-  const [answers, setAnswers] = useState<any>({ sleep: 5, socialEnergy: 5, pressure: 5, ate: 'yes', emotion: '' })
+  const [answers, setAnswers] = useState<any>({ sleep: 5, socialEnergy: 5, pressure: 5, ate: 'yes', emotion: '', notes: '' })
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
   const [showRecommendation, setShowRecommendation] = useState(false)
@@ -124,7 +125,7 @@ export default function CheckIn() {
 
   const q = QUESTIONS[currentQ]
   const progress = ((currentQ + 1) / QUESTIONS.length) * 100
-  const canProceed = q.type === 'emotion' ? !!answers.emotion : true
+  const canProceed = q.type === 'emotion' ? !!answers.emotion : true  // notes is always optional
 
   // Dynamic Background Color based on slider value
   const activeColor = useMemo(() => {
@@ -288,6 +289,35 @@ export default function CheckIn() {
                         <div style={{ fontSize: 13, fontWeight: answers.emotion === emotion.label ? 600 : 400 }}>{emotion.label}</div>
                       </motion.button>
                     ))}
+                  </div>
+                )}
+
+                {q.type === 'notes' && (
+                  <div style={{ position: 'relative' }}>
+                    <textarea
+                      value={answers.notes}
+                      onChange={(e) => setAnswers({ ...answers, notes: e.target.value.slice(0, 200) })}
+                      placeholder="e.g. &quot;I have a big exam tomorrow and I'm nervous about it.&quot;"
+                      rows={4}
+                      style={{
+                        width: '100%', padding: '20px', borderRadius: 20, resize: 'none',
+                        background: 'rgba(255,255,255,0.03)', border: `1px solid ${activeColor}30`,
+                        color: '#E8EEF5', fontSize: 15, fontFamily: 'Inter, sans-serif',
+                        outline: 'none', lineHeight: 1.7, boxSizing: 'border-box',
+                        transition: 'border-color 0.3s ease',
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = `${activeColor}70`}
+                      onBlur={(e) => e.target.style.borderColor = `${activeColor}30`}
+                    />
+                    <div style={{
+                      position: 'absolute', bottom: 12, right: 16,
+                      fontSize: 11, color: answers.notes.length > 180 ? '#E8A04A' : '#3A4A5E',
+                    }}>
+                      {answers.notes.length}/200
+                    </div>
+                    <p style={{ fontSize: 12, color: '#3A4A5E', marginTop: 10, textAlign: 'center' }}>
+                      ✦ Aura will read this before your next conversation
+                    </p>
                   </div>
                 )}
               </div>

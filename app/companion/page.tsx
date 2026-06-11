@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { auth } from '@/lib/firebase'
 import { useUser } from '@/lib/UserContext'
 import Sidebar from '@/components/Sidebar'
 
@@ -21,6 +20,9 @@ export default function Companion() {
   const [input, setInput] = useState('')
   const [thinking, setThinking] = useState(false)
   const [started, setStarted] = useState(false)
+  const [historyLoading, setHistoryLoading] = useState(true)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [clearing, setClearing] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -28,6 +30,26 @@ export default function Companion() {
       router.push('/onboarding')
     }
   }, [user, loading, router])
+
+  // ── Load conversation history on mount ──────────────────────────────────────
+  useEffect(() => {
+    if (!user) return
+    const loadHistory = async () => {
+      try {
+        const res = await fetch(`/api/companion?userId=${user.uid}`)
+        const data = await res.json()
+        if (data.messages && data.messages.length > 0) {
+          setMessages(data.messages)
+          setStarted(true)
+        }
+      } catch (e) {
+        console.error('Failed to load conversation history:', e)
+      } finally {
+        setHistoryLoading(false)
+      }
+    }
+    loadHistory()
+  }, [user])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -47,7 +69,7 @@ export default function Companion() {
     const data = await res.json()
     return data.message || "I'm here. Take your time."
   }
-  
+
   const startConversation = async () => {
     setStarted(true)
     setThinking(true)
@@ -61,7 +83,7 @@ export default function Companion() {
       setThinking(false)
     }
   }
-  
+
   const handleSend = async () => {
     if (!input.trim() || thinking) return
     const userMessage = input.trim()
@@ -79,19 +101,33 @@ export default function Companion() {
     }
   }
 
+  const handleClearConversation = async () => {
+    if (!user) return
+    setClearing(true)
+    try {
+      await fetch(`/api/companion?userId=${user.uid}`, { method: 'DELETE' })
+      setMessages([])
+      setStarted(false)
+      setShowClearConfirm(false)
+    } catch (e) {
+      console.error('Failed to clear conversation:', e)
+    } finally {
+      setClearing(false)
+    }
+  }
+
   const driftStatus = checkins.length > 0
     ? checkins[checkins.length - 1]?.status || 'green'
     : 'green'
-
   const statusColor = driftStatus === 'red' ? '#E05C5C' : driftStatus === 'amber' ? '#E8A04A' : '#4FC3A1'
 
-  if (loading) {
+  if (loading || historyLoading) {
     return (
       <div style={{ display: 'flex', minHeight: '100vh', background: '#080C12' }}>
         <Sidebar userName={userName} userData={userData} />
         <main style={{ flex: 1, marginLeft: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-            style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid rgba(79,195,161,0.1)', borderTop: '2px solid #4FC3A1' }} />
+            style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid rgba(167,139,250,0.1)', borderTop: '2px solid #A78BFA' }} />
         </main>
       </div>
     )
@@ -138,25 +174,113 @@ export default function Companion() {
               </h1>
             </div>
           </div>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '8px 16px', borderRadius: 20,
-            background: `${statusColor}10`, border: `1px solid ${statusColor}25`,
-          }}>
-            <motion.div
-              animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 2, repeat: Infinity }}
-              style={{ width: 7, height: 7, borderRadius: '50%', background: statusColor, boxShadow: `0 0 6px ${statusColor}` }}
-            />
-            <span style={{ fontSize: 12, color: statusColor, fontWeight: 500 }}>
-              {driftStatus === 'red' ? 'Needs attention' : driftStatus === 'amber' ? 'Drifting' : 'Stable'}
-            </span>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* Memory indicator */}
+            {messages.length > 0 && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '6px 12px', borderRadius: 20,
+                background: 'rgba(167,139,250,0.06)',
+                border: '1px solid rgba(167,139,250,0.15)',
+              }}>
+                <span style={{ fontSize: 11 }}>💭</span>
+                <span style={{ fontSize: 11, color: '#A78BFA' }}>
+                  {messages.length} messages remembered
+                </span>
+              </div>
+            )}
+
+            {/* Drift status badge */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '8px 16px', borderRadius: 20,
+              background: `${statusColor}10`, border: `1px solid ${statusColor}25`,
+            }}>
+              <motion.div
+                animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 2, repeat: Infinity }}
+                style={{ width: 7, height: 7, borderRadius: '50%', background: statusColor, boxShadow: `0 0 6px ${statusColor}` }}
+              />
+              <span style={{ fontSize: 12, color: statusColor, fontWeight: 500 }}>
+                {driftStatus === 'red' ? 'Needs attention' : driftStatus === 'amber' ? 'Drifting' : 'Stable'}
+              </span>
+            </div>
+
+            {/* Clear conversation button */}
+            {messages.length > 0 && (
+              <motion.button
+                whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                onClick={() => setShowClearConfirm(true)}
+                style={{
+                  padding: '8px 14px', borderRadius: 12, cursor: 'pointer',
+                  background: 'rgba(224,92,92,0.06)', border: '1px solid rgba(224,92,92,0.2)',
+                  color: '#E05C5C', fontSize: 12, fontWeight: 500,
+                }}
+              >
+                Clear chat
+              </motion.button>
+            )}
           </div>
         </div>
+
+        {/* Clear Confirm Dialog */}
+        <AnimatePresence>
+          {showClearConfirm && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              style={{
+                position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.7)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)',
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                style={{
+                  padding: '32px', borderRadius: 24, maxWidth: 400, width: '90%',
+                  background: '#0F1520', border: '1px solid rgba(224,92,92,0.3)',
+                  textAlign: 'center',
+                }}
+              >
+                <div style={{ fontSize: 36, marginBottom: 16 }}>🗑️</div>
+                <h3 style={{ fontSize: 20, fontFamily: 'Playfair Display, serif', color: '#E8EEF5', marginBottom: 8 }}>
+                  Clear conversation?
+                </h3>
+                <p style={{ fontSize: 13, color: '#5A6A7E', lineHeight: 1.6, marginBottom: 24 }}>
+                  Aura will forget all your previous messages. Your check-in data will be unaffected.
+                </p>
+                <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                  <motion.button
+                    whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                    onClick={() => setShowClearConfirm(false)}
+                    style={{
+                      padding: '10px 24px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)',
+                      background: 'transparent', color: '#5A6A7E', fontSize: 14, cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                    onClick={handleClearConversation}
+                    disabled={clearing}
+                    style={{
+                      padding: '10px 24px', borderRadius: 12, border: 'none',
+                      background: 'linear-gradient(135deg, #E05C5C, #c04444)',
+                      color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                    }}
+                  >
+                    {clearing ? 'Clearing...' : 'Yes, clear it'}
+                  </motion.button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div style={{ flex: 1, padding: '32px', display: 'flex', flexDirection: 'column', maxWidth: 720, margin: '0 auto', width: '100%' }}>
           <AnimatePresence mode="wait">
 
-            {/* LANDING */}
+            {/* LANDING — shown only when no history exists */}
             {!started ? (
               <motion.div key="landing"
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
@@ -228,7 +352,7 @@ export default function Companion() {
                   Start talking with Aura →
                 </motion.button>
                 <p style={{ fontSize: 11, color: '#2A3547', marginTop: 16 }}>
-                  Aura knows your check-in history · Conversations are private
+                  Aura remembers your conversations · Check-in history is always included
                 </p>
               </motion.div>
             ) : (
