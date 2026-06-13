@@ -33,7 +33,8 @@ export default function Dashboard() {
   }, [])
 
   useEffect(() => {
-    if (!loading && !user) router.push('/onboarding')
+    // TEMPORARILY DISABLED to debug redirect loop
+    // if (!loading && !user) router.push('/onboarding')
   }, [user, loading, router])
 
   useEffect(() => {
