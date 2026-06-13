@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/lib/UserContext'
 import Sidebar from '@/components/Sidebar'
+import BottomNav from '@/components/BottomNav'
+import { useIsMobile } from '@/lib/hooks'
 
 type Message = {
   role: 'user' | 'assistant'
@@ -24,6 +26,7 @@ export default function Companion() {
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [clearing, setClearing] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     if (!loading && !user) {
@@ -124,8 +127,8 @@ export default function Companion() {
   if (loading || historyLoading) {
     return (
       <div style={{ display: 'flex', minHeight: '100vh', background: '#080C12' }}>
-        <Sidebar userName={userName} userData={userData} />
-        <main style={{ flex: 1, marginLeft: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Sidebar userName={userName} userData={userData} />
+        <main style={{ flex: 1, marginLeft: isMobile ? 0 : '220px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
             style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid rgba(167,139,250,0.1)', borderTop: '2px solid #A78BFA' }} />
         </main>
@@ -141,8 +144,9 @@ export default function Companion() {
       </div>
 
       <Sidebar userName={userName} userData={userData} />
+      {isMobile && <BottomNav userName={userName} />}
 
-      <main style={{ flex: 1, marginLeft: '220px', minHeight: '100vh', position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
+      <main style={{ flex: 1, marginLeft: isMobile ? 0 : '220px', minHeight: '100vh', position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', paddingBottom: isMobile ? 80 : 0 }}>
 
         {/* Top bar */}
         <div style={{

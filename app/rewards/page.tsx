@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/lib/UserContext'
 import Sidebar from '@/components/Sidebar'
+import BottomNav from '@/components/BottomNav'
+import { useIsMobile } from '@/lib/hooks'
 
 // ── XP & Level ────────────────────────────────────────────────────────────
 const XP_PER_LEVEL = 500
@@ -149,6 +151,7 @@ function BadgeCard({ badge, unlocked, index }: { badge: Badge; unlocked: boolean
 export default function Rewards() {
   const router = useRouter()
   const { user, userData, checkins, loading } = useUser()
+  const isMobile = useIsMobile()
   const [activeCategory, setActiveCategory] = useState('all')
 
   const streak = userData?.streak ?? 0
@@ -189,7 +192,8 @@ export default function Rewards() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#080C12', fontFamily: 'Inter, sans-serif' }}>
       <Sidebar userName={userData?.name} userData={userData} />
-      <main style={{ marginLeft: 220, flex: 1, padding: '32px', overflowY: 'auto' }}>
+      {isMobile && <BottomNav userName={userData?.name} />}
+      <main style={{ marginLeft: isMobile ? 0 : 220, flex: 1, padding: isMobile ? '20px 16px' : '32px', overflowY: 'auto', paddingBottom: isMobile ? 90 : 32 }}>
 
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 28 }}>

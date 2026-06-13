@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { auth } from '@/lib/firebase'
 import { useUser } from '@/lib/UserContext'
 import Sidebar from '@/components/Sidebar'
+import BottomNav from '@/components/BottomNav'
+import { useIsMobile } from '@/lib/hooks'
 
 const GAMES = [
   {
@@ -98,6 +100,7 @@ function GamesHubContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, userData, loading } = useUser()
+  const isMobile = useIsMobile()
   const userName = user ? (user.displayName || user.email?.split('@')[0] || 'Student') : 'Student'
   const [hoveredGame, setHoveredGame] = useState<string | null>(null)
   const [recGameId, setRecGameId] = useState<string | null>(null)
@@ -137,8 +140,9 @@ function GamesHubContent() {
       }} />
 
       <Sidebar userName={userName} userData={userData} />
+      {isMobile && <BottomNav userName={userName} />}
 
-      <main style={{ flex: 1, marginLeft: '220px', padding: '60px', position: 'relative', zIndex: 1 }}>
+      <main style={{ flex: 1, marginLeft: isMobile ? 0 : '220px', padding: isMobile ? '20px 16px' : '60px', position: 'relative', zIndex: 1, paddingBottom: isMobile ? 80 : 0 }}>
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 56 }}>
           <p style={{

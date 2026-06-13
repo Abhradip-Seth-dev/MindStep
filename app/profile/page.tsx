@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/lib/UserContext'
 import Sidebar from '@/components/Sidebar'
+import BottomNav from '@/components/BottomNav'
+import { useIsMobile } from '@/lib/hooks'
 
 const AVATAR_EMOJIS = ['🧠','🌱','⚡','🎯','🔥','💎','🌙','🏆','🎮','🌊','🦋','🎵','✨','🌸','🧘']
 
@@ -46,6 +48,7 @@ export default function Profile() {
   const [notificationTime, setNotificationTime] = useState('21:00')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const isMobile = useIsMobile()
 
   // Sync form fields once userData loads from Firebase (fixes stale-state after refresh)
   useEffect(() => {
@@ -106,10 +109,11 @@ export default function Profile() {
   return (
     <div style={{ display:'flex', minHeight:'100vh', background:'#080C12', fontFamily:'Inter, sans-serif' }}>
       <Sidebar userName={displayName} userData={userData} />
-      <main style={{ marginLeft:220, flex:1, padding:'32px', overflowY:'auto' }}>
+      {isMobile && <BottomNav userName={displayName} />}
+      <main style={{ marginLeft: isMobile ? 0 : 220, flex:1, padding: isMobile ? '20px 16px' : '32px', overflowY:'auto', paddingBottom: isMobile ? 90 : 32 }}>
 
         {/* Header */}
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:28 }}>
+        <div style={{ display:'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent:'space-between', marginBottom:28, gap:12 }}>
           <div>
             <p style={{ fontSize:11, letterSpacing:'0.2em', textTransform:'uppercase', color:'#4A5A6E', marginBottom:6 }}>Your Account</p>
             <h1 style={{ fontSize:32, fontFamily:'Playfair Display, serif', color:'#E8EEF5', margin:0 }}>Profile</h1>
@@ -131,7 +135,7 @@ export default function Profile() {
           <motion.div animate={{ rotate:360 }} transition={{ duration:40, repeat:Infinity, ease:'linear' }}
             style={{ position:'absolute', top:-120, right:-120, width:360, height:360, borderRadius:'50%',
               border:`1px solid ${levelColor}15`, pointerEvents:'none' }} />
-          <div style={{ display:'flex', alignItems:'center', gap:28 }}>
+          <div style={{ display:'flex', alignItems:'center', gap: isMobile ? 16 : 28, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
             {/* Avatar */}
             <div style={{ position:'relative', flexShrink:0 }}>
               <motion.div animate={{ rotate:360 }} transition={{ duration:12, repeat:Infinity, ease:'linear' }}
@@ -220,7 +224,7 @@ export default function Profile() {
               style={{ height:'100%', borderRadius:3, background:`linear-gradient(90deg, ${levelColor}, ${levelColor}80)`,
                 boxShadow:`0 0 8px ${levelColor}60` }} />
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginTop:16 }}>
+          <div style={{ display:'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap:12, marginTop:16 }}>
             {[['🔥','Streak',`${streak} days`,'#E8A04A'],['📋','Check-ins',totalCheckins,'#4FC3A1'],['😊','Green Days',greenDays,'#86efac'],['🌸','Blooming',bloomingDays,'#f9a8d4']].map(([icon,label,val,col])=>(
               <div key={label as string} style={{ padding:'12px', borderRadius:12, background:`${col as string}08`, border:`1px solid ${col as string}18`, textAlign:'center' }}>
                 <div style={{ fontSize:18, marginBottom:4 }}>{icon}</div>
@@ -310,7 +314,7 @@ export default function Profile() {
         )}
 
         {/* ── EDIT + PRIVACY ──────────────────────────────────────── */}
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+        <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:16 }}>
 
           {/* Edit info */}
           <motion.div initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.2 }}

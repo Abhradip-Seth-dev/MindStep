@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { auth } from '@/lib/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import Sidebar from '@/components/Sidebar'
+import BottomNav from '@/components/BottomNav'
+import { useIsMobile } from '@/lib/hooks'
 
 const GAMES = [
   { id: 'memory-matrix', name: 'Memory Matrix', emoji: '🧩', color: '#5B9CF6' },
@@ -94,8 +96,9 @@ export default function Leaderboard() {
       <div style={{ position: 'fixed', top: '10%', right: '5%', width: 500, height: 500, borderRadius: '50%', background: `radial-gradient(circle, ${activeGameData.color}08 0%, transparent 70%)`, pointerEvents: 'none', zIndex: 0, transition: 'background 0.5s' }} />
 
       <Sidebar userName={userName} userData={userData} />
+      {isMobile && <BottomNav userName={userName} />}
 
-      <main style={{ flex: 1, marginLeft: '220px', padding: '50px 60px', position: 'relative', zIndex: 1 }}>
+      <main style={{ flex: 1, marginLeft: isMobile ? 0 : '220px', padding: isMobile ? '20px 16px' : '50px 60px', position: 'relative', zIndex: 1, paddingBottom: isMobile ? 80 : 0 }}>
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 40 }}>
           <motion.button whileHover={{ x: -3 }} whileTap={{ scale: 0.97 }}

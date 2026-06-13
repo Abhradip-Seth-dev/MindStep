@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 import { useUser } from '@/lib/UserContext'
+import BottomNav from '@/components/BottomNav'
+import { useIsMobile } from '@/lib/hooks'
 
 // ── WISDOM BITES DATA ────────────────────────────────────────────────────────
 const WISDOM_BITES = [
@@ -106,6 +108,7 @@ export default function CommunityPage() {
 
   // Expanded wisdom bite
   const [expandedBite, setExpandedBite] = useState<string | null>(null)
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     if (!loading && !user) router.push('/onboarding')
@@ -222,17 +225,18 @@ export default function CommunityPage() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#080C12', fontFamily: 'Inter, sans-serif' }}>
       <Sidebar userName={userName} userData={userData} />
-
+      
       {/* Ambient background */}
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
         <div style={{ position: 'absolute', top: '5%', right: '10%', width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle, rgba(167,139,250,0.04) 0%, transparent 70%)' }} />
         <div style={{ position: 'absolute', bottom: '10%', left: '15%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(79,195,161,0.03) 0%, transparent 70%)' }} />
       </div>
+      {isMobile && <BottomNav userName={userName} />}
 
-      <main style={{ flex: 1, marginLeft: '220px', minHeight: '100vh', position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
+      <main style={{ flex: 1, marginLeft: isMobile ? 0 : '220px', minHeight: '100vh', position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', paddingBottom: isMobile ? 80 : 0 }}>
 
         {/* Header */}
-        <div style={{ position: 'sticky', top: 0, zIndex: 40, padding: '20px 40px', background: 'rgba(8,12,18,0.92)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ position: 'sticky', top: 0, zIndex: 40, padding: isMobile ? '14px 16px' : '20px 40px', background: 'rgba(8,12,18,0.92)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <p style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#3A4A5E', marginBottom: 4 }}>TNU · Mindstep</p>
@@ -279,7 +283,7 @@ export default function CommunityPage() {
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, padding: '32px 40px 60px' }}>
+        <div style={{ flex: 1, padding: isMobile ? '20px 16px 60px' : '32px 40px 60px' }}>
           <AnimatePresence mode="wait">
 
             {/* ── WISDOM BITES TAB ── */}

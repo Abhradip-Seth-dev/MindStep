@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/lib/UserContext'
 import Sidebar from '@/components/Sidebar'
+import BottomNav from '@/components/BottomNav'
+import { useIsMobile } from '@/lib/hooks'
 
 // ── helpers ────────────────────────────────────────────────────────────────
 /**
@@ -257,6 +259,7 @@ const stateInfo: Record<string, { title: string; subtitle: string; color: string
 export default function MindGarden() {
   const router = useRouter()
   const { user, userData, checkins, baseline, loading } = useUser()
+  const isMobile = useIsMobile()
   const [tooltip, setTooltip] = useState<{ checkin: any; idx: number } | null>(null)
 
   useEffect(() => {
@@ -307,8 +310,9 @@ export default function MindGarden() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#080C12', fontFamily: 'Inter, sans-serif' }}>
       <Sidebar userName={userData?.name} userData={userData} />
+      {isMobile && <BottomNav userName={userData?.name} />}
 
-      <main style={{ marginLeft: 220, flex: 1, display: 'flex', flexDirection: 'column', padding: '32px', overflowY: 'auto' }}>
+      <main style={{ marginLeft: isMobile ? 0 : 220, flex: 1, display: 'flex', flexDirection: 'column', padding: isMobile ? '20px 16px' : '32px', overflowY: 'auto', paddingBottom: isMobile ? 90 : 32 }}>
 
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: 24 }}>

@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { auth } from '@/lib/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import Sidebar from '@/components/Sidebar'
+import BottomNav from '@/components/BottomNav'
+import { useIsMobile } from '@/lib/hooks'
 import { submitGameScore } from '@/lib/submitScore'
 import InlineLeaderboard from '@/components/InlineLeaderboard'
 
@@ -145,8 +147,9 @@ export default function FocusFlow() {
     <div style={{ display: 'flex', minHeight: '100vh', background: '#080C12' }}>
       <div style={{ position: 'fixed', top: '10%', right: '5%', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(79,195,161,0.07) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
       <Sidebar userName={userName} userData={userData} />
+      {isMobile && <BottomNav userName={userName} />}
 
-      <main style={{ flex: 1, marginLeft: '220px', padding: '40px 60px', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+      <main style={{ flex: 1, marginLeft: isMobile ? 0 : '220px', padding: isMobile ? '20px 16px' : '40px 60px', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 1, paddingBottom: isMobile ? 80 : 0 }}>
         <div style={{ width: '100%', maxWidth: 680, marginBottom: 24 }}>
           <motion.button whileHover={{ x: -3 }} whileTap={{ scale: 0.97 }}
             onClick={() => { if (animRef.current) cancelAnimationFrame(animRef.current); if (timerRef.current) clearInterval(timerRef.current); router.push('/games') }}

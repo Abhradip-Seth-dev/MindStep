@@ -10,6 +10,8 @@ import {
   Tooltip, ResponsiveContainer,
 } from 'recharts'
 import Sidebar from '@/components/Sidebar'
+import BottomNav from '@/components/BottomNav'
+import { useIsMobile } from '@/lib/hooks'
 import Particles, { initParticlesEngine } from '@tsparticles/react'
 import { loadSlim } from '@tsparticles/slim'
 
@@ -27,6 +29,7 @@ export default function Dashboard() {
   const { user, userData, baseline, checkins, loading } = useUser()
   const [driftStatus, setDriftStatus] = useState<'green' | 'amber' | 'red'>('green')
   const [particlesInit, setParticlesInit] = useState(false)
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     initParticlesEngine(async (engine) => await loadSlim(engine)).then(() => setParticlesInit(true))
@@ -97,21 +100,22 @@ export default function Dashboard() {
       }} style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }} />}
 
       <Sidebar userName={userName} userData={userData} />
+      {isMobile && <BottomNav userName={userName} />}
 
-      <main style={{ flex: 1, marginLeft: 220, minHeight: '100vh', overflowY: 'auto', position: 'relative', zIndex: 1, padding: 32 }}>
+      <main style={{ flex: 1, marginLeft: isMobile ? 0 : 220, minHeight: '100vh', overflowY: 'auto', position: 'relative', zIndex: 1, padding: isMobile ? '20px 16px' : 32, paddingBottom: isMobile ? 90 : 32 }}>
 
         {/* ── HEADER ────────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+        <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', marginBottom: 28, gap: 12 }}>
           <div>
             <p style={{ fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#5A6A7E', marginBottom: 4 }}>
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </p>
-            <h1 style={{ fontSize: 28, fontFamily: 'Playfair Display, serif', color: '#E8EEF5', margin: 0 }}>
+            <h1 style={{ fontSize: isMobile ? 22 : 28, fontFamily: 'Playfair Display, serif', color: '#E8EEF5', margin: 0 }}>
               {greeting}, <span style={{ color: '#4FC3A1' }}>{userName.split(' ')[0]}</span>
             </h1>
           </div>
           <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => router.push('/checkin')}
-            style={{ padding: '10px 24px', borderRadius: 12, background: 'linear-gradient(135deg, #4FC3A1, #3DA88B)', color: '#080C12', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(79,195,161,0.3)' }}>
+            style={{ padding: isMobile ? '8px 14px' : '10px 24px', borderRadius: 12, background: 'linear-gradient(135deg, #4FC3A1, #3DA88B)', color: '#080C12', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(79,195,161,0.3)', whiteSpace: 'nowrap', flexShrink: 0 }}>
             + Log today
           </motion.button>
         </div>
@@ -129,7 +133,7 @@ export default function Dashboard() {
         )}
 
         {/* ── TOP ROW: Level Progress + Aura's Insight ──────────────── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 20, marginBottom: 24 }}>
           
           {/* Level / XP */}
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
@@ -172,7 +176,7 @@ export default function Dashboard() {
         </div>
 
         {/* ── MIDDLE ROW: Baseline Chart + Right Stats ──────────────── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20, marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gap: 20, marginBottom: 24 }}>
           
           {/* Glassmorphic Chart */}
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
@@ -260,7 +264,7 @@ export default function Dashboard() {
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
             style={{ padding: '24px', borderRadius: 20, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
             <p style={{ fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#5A6A7E', marginBottom: 16 }}>Recent Check-ins Log</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(4, 1fr)' : 'repeat(7, 1fr)', gap: 12 }}>
               {checkins.slice(-7).reverse().map((c: any, i: number) => {
                 const sc = c.status === 'red' ? '#E05C5C' : c.status === 'amber' ? '#E8A04A' : '#4FC3A1'
                 return (
@@ -279,15 +283,17 @@ export default function Dashboard() {
       </main>
       
       {/* ── FLOATING AURA BADGE ───────────────────────────────────── */}
-      <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1 }} whileHover={{ scale: 1.05 }} onClick={() => router.push('/companion')}
-        style={{ position: 'fixed', bottom: 32, right: 32, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderRadius: 24, background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.08))', border: '1px solid rgba(167,139,250,0.3)', cursor: 'pointer', zIndex: 50, boxShadow: '0 8px 32px rgba(167,139,250,0.2)', backdropFilter: 'blur(20px)' }}>
-        <motion.div animate={{ scale: [1, 1.15, 1], opacity: [0.8, 1, 0.8] }} transition={{ duration: 3, repeat: Infinity }}
-          style={{ width: 32, height: 32, borderRadius: '50%', background: 'radial-gradient(circle, rgba(167,139,250,0.4) 0%, rgba(167,139,250,0.1) 70%)', border: '1px solid rgba(167,139,250,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, boxShadow: '0 0 16px rgba(167,139,250,0.4)' }}>✦</motion.div>
-        <div>
-          <p style={{ fontSize: 12, fontWeight: 600, color: '#A78BFA', lineHeight: 1, marginBottom: 3 }}>Aura AI Companion</p>
-          <p style={{ fontSize: 10, color: '#E8EEF5', lineHeight: 1 }}>{driftStatus !== 'green' ? 'Wants to check in with you' : 'Your companion is here'}</p>
-        </div>
-      </motion.div>
+      {!isMobile && (
+        <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1 }} whileHover={{ scale: 1.05 }} onClick={() => router.push('/companion')}
+          style={{ position: 'fixed', bottom: 32, right: 32, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderRadius: 24, background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(139,92,246,0.08))', border: '1px solid rgba(167,139,250,0.3)', cursor: 'pointer', zIndex: 50, boxShadow: '0 8px 32px rgba(167,139,250,0.2)', backdropFilter: 'blur(20px)' }}>
+          <motion.div animate={{ scale: [1, 1.15, 1], opacity: [0.8, 1, 0.8] }} transition={{ duration: 3, repeat: Infinity }}
+            style={{ width: 32, height: 32, borderRadius: '50%', background: 'radial-gradient(circle, rgba(167,139,250,0.4) 0%, rgba(167,139,250,0.1) 70%)', border: '1px solid rgba(167,139,250,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, boxShadow: '0 0 16px rgba(167,139,250,0.4)' }}>✦</motion.div>
+          <div>
+            <p style={{ fontSize: 12, fontWeight: 600, color: '#A78BFA', lineHeight: 1, marginBottom: 3 }}>Aura AI Companion</p>
+            <p style={{ fontSize: 10, color: '#E8EEF5', lineHeight: 1 }}>{driftStatus !== 'green' ? 'Wants to check in with you' : 'Your companion is here'}</p>
+          </div>
+        </motion.div>
+      )}
 
     </div>
   )

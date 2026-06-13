@@ -7,6 +7,8 @@ import { auth, db } from '@/lib/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
 import Sidebar from '@/components/Sidebar'
+import BottomNav from '@/components/BottomNav'
+import { useIsMobile } from '@/lib/hooks'
 
 type Message = {
   id: string
@@ -35,6 +37,7 @@ export default function Peer() {
   const [partnerName, setPartnerName] = useState('Anonymous')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -165,7 +168,7 @@ export default function Peer() {
     return (
       <div style={{ display: 'flex', minHeight: '100vh', background: '#080C12' }}>
         <Sidebar userName={userName} userData={userData} />
-        <main style={{ flex: 1, marginLeft: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <main style={{ flex: 1, marginLeft: isMobile ? 0 : '220px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
             style={{ width: 40, height: 40, borderRadius: '50%', border: '2px solid rgba(79,195,161,0.1)', borderTop: '2px solid #4FC3A1' }} />
         </main>
@@ -181,12 +184,13 @@ export default function Peer() {
       </div>
 
       <Sidebar userName={userName} userData={userData} />
+      {isMobile && <BottomNav userName={userName} />}
 
-      <main style={{ flex: 1, marginLeft: '220px', minHeight: '100vh', position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
+      <main style={{ flex: 1, marginLeft: isMobile ? 0 : '220px', minHeight: '100vh', position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', paddingBottom: isMobile ? 80 : 0 }}>
 
         {/* Top bar */}
         <div style={{
-          position: 'sticky', top: 0, zIndex: 40, padding: '16px 32px',
+          position: 'sticky', top: 0, zIndex: 40, padding: isMobile ? '12px 16px' : '16px 32px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           background: 'rgba(8,12,18,0.92)', backdropFilter: 'blur(24px)',
           borderBottom: '1px solid rgba(255,255,255,0.05)',
@@ -206,7 +210,7 @@ export default function Peer() {
           )}
         </div>
 
-        <div style={{ flex: 1, padding: '32px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, padding: isMobile ? '20px 16px' : '32px', display: 'flex', flexDirection: 'column' }}>
           <AnimatePresence mode="wait">
 
             {/* LANDING */}
@@ -238,7 +242,7 @@ export default function Peer() {
                   No names. No judgment. Just real support from someone who gets it.
                 </p>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 40 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 40 }}>
                   {[
                     { icon: '🔒', title: 'Fully anonymous', desc: 'No names are shared. You choose what to reveal.' },
                     { icon: '🎓', title: 'Same university', desc: 'Matched with someone from TNU who understands your context.' },

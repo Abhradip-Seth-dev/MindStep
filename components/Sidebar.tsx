@@ -4,6 +4,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { auth } from '@/lib/firebase'
 import { signOut } from 'firebase/auth'
+import { useIsMobile } from '@/lib/hooks'
 
 const nav = [
   {
@@ -122,11 +123,15 @@ export default function Sidebar({
 }) {
   const router = useRouter()
   const pathname = usePathname()
+  const isMobile = useIsMobile()
 
   const handleSignOut = async () => {
     await signOut(auth)
     router.push('/onboarding')
   }
+
+  // On mobile, BottomNav replaces the sidebar entirely
+  if (isMobile) return null
 
   return (
     <aside style={{

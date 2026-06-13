@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@/lib/UserContext'
 import Sidebar from '@/components/Sidebar'
+import BottomNav from '@/components/BottomNav'
+import { useIsMobile } from '@/lib/hooks'
 
 // ── Live Pulse Node Network ────────────────────────────────────────────────
 const NODES = [
@@ -64,6 +66,7 @@ export default function Heatmap() {
   const [selected, setSelected] = useState<Node | null>(null)
   const [filter, setFilter] = useState<'all' | 'Hostel' | 'Academic' | 'Facility'>('all')
   const [time, setTime] = useState(new Date())
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     if (!loading && !user) router.push('/onboarding')
@@ -88,11 +91,12 @@ export default function Heatmap() {
       </div>
 
       <Sidebar userName={userName} userData={userData} />
+      {isMobile && <BottomNav userName={userName} />}
 
-      <main style={{ flex: 1, marginLeft: 220, minHeight: '100vh', overflowY: 'auto', position: 'relative', zIndex: 1 }}>
+      <main style={{ flex: 1, marginLeft: isMobile ? 0 : 220, minHeight: '100vh', overflowY: 'auto', position: 'relative', zIndex: 1, paddingBottom: isMobile ? 80 : 0 }}>
 
         {/* Top bar */}
-        <div style={{ position: 'sticky', top: 0, zIndex: 40, padding: '20px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(8,12,18,0.85)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ position: 'sticky', top: 0, zIndex: 40, padding: isMobile ? '14px 16px' : '20px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(8,12,18,0.85)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(255,255,255,0.05)', gap: 12, flexWrap: 'wrap' }}>
           <div>
             <p style={{ fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#5A6A7E', marginBottom: 4 }}>Campus Intelligence</p>
             <h1 style={{ fontSize: 24, fontFamily: 'Playfair Display, serif', color: '#E8EEF5', fontWeight: 600, margin: 0 }}>Live Pulse Network</h1>
@@ -177,13 +181,13 @@ export default function Heatmap() {
           </div>
 
           {/* Bottom Grid: Insights & Details */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 320px', gap: 24 }}>
             
             {/* Left: Global Stats & Trending Stressors */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               
               {/* Macro Stats */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 16 }}>
                 {[{ label: 'Total Tracked', val: totalStudents, col: '#5B9CF6' }, { label: 'Stable Focus', val: `${Math.round(totalGreen/totalStudents*100)}%`, col: '#4FC3A1' }, { label: 'Mental Drift', val: `${Math.round(totalAmber/totalStudents*100)}%`, col: '#E8A04A' }, { label: 'High Alert', val: `${Math.round(totalRed/totalStudents*100)}%`, col: '#E05C5C' }].map(s => (
                   <div key={s.label} style={{ padding: '20px', borderRadius: 20, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
                     <p style={{ fontSize: 32, fontFamily: 'Playfair Display, serif', color: s.col, margin: '0 0 4px 0', lineHeight: 1 }}>{s.val}</p>
@@ -198,7 +202,7 @@ export default function Heatmap() {
                   <div style={{ padding: '6px', borderRadius: 8, background: 'rgba(167,139,250,0.15)', color: '#A78BFA' }}>🔥</div>
                   <h3 style={{ fontSize: 16, fontFamily: 'Playfair Display, serif', color: '#E8EEF5', margin: 0 }}>Trending Campus Stressors</h3>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 16 }}>
                   {TRENDING_STRESSORS.map(t => (
                     <div key={t.topic} style={{ padding: '16px', borderRadius: 16, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
                       <p style={{ fontSize: 13, color: '#E8EEF5', fontWeight: 500, marginBottom: 12 }}>{t.topic}</p>

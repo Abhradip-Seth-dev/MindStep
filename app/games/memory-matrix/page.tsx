@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { auth } from '@/lib/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import Sidebar from '@/components/Sidebar'
+import BottomNav from '@/components/BottomNav'
+import { useIsMobile } from '@/lib/hooks'
 import { submitGameScore } from '@/lib/submitScore'
 import InlineLeaderboard from '@/components/InlineLeaderboard'
 
@@ -184,9 +186,10 @@ export default function MemoryMatrix() {
       }} />
 
       <Sidebar userName={userName} userData={userData} />
+      {isMobile && <BottomNav userName={userName} />}
 
       <main style={{
-        flex: 1, marginLeft: '220px', padding: '60px',
+        flex: 1, marginLeft: isMobile ? 0 : '220px', padding: isMobile ? '20px 16px' : '60px',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         position: 'relative', zIndex: 1,
       }}>

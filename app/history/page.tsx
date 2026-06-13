@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { auth } from '@/lib/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import Sidebar from '@/components/Sidebar'
+import BottomNav from '@/components/BottomNav'
+import { useIsMobile } from '@/lib/hooks'
 
 const EMOTION_COLORS: Record<string, string> = {
   Good: '#4FC3A1', Okay: '#5B9CF6', Tired: '#8B9BB0',
@@ -29,6 +31,7 @@ export default function History() {
   const [filter, setFilter] = useState<Filter>('all')
   const [expanded, setExpanded] = useState<string | null>(null)
   const [view, setView] = useState<'list' | 'grid'>('list')
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -91,7 +94,7 @@ export default function History() {
       <div style={{ display: 'flex', minHeight: '100vh', background: '#080C12' }}>
         <Sidebar userName={userName} userData={userData} />
         <main style={{
-          flex: 1, marginLeft: '220px',
+          flex: 1, marginLeft: isMobile ? 0 : '220px',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <motion.div
@@ -124,19 +127,22 @@ export default function History() {
       </div>
 
       <Sidebar userName={userName} userData={userData} />
+      {isMobile && <BottomNav userName={userName} />}
 
       <main style={{
-        flex: 1, marginLeft: '220px',
+        flex: 1, marginLeft: isMobile ? 0 : '220px',
         minHeight: '100vh', overflowY: 'auto',
         position: 'relative', zIndex: 1,
+        paddingBottom: isMobile ? 80 : 0
       }}>
         <div style={{
           position: 'sticky', top: 0, zIndex: 40,
-          padding: '20px 32px',
+          padding: isMobile ? '14px 16px' : '20px 32px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           background: 'rgba(8,12,18,0.92)',
           backdropFilter: 'blur(24px)',
           borderBottom: '1px solid rgba(255,255,255,0.05)',
+          gap: 12, flexWrap: 'wrap'
         }}>
           <div>
             <p style={{
@@ -193,9 +199,9 @@ export default function History() {
           </div>
         </div>
 
-        <div style={{ padding: '28px 32px' }}>
+        <div style={{ padding: isMobile ? '20px 16px' : '28px 32px' }}>
           <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+            display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
             gap: 14, marginBottom: 24,
           }}>
             {[
@@ -246,7 +252,8 @@ export default function History() {
                 background: 'rgba(255,255,255,0.02)',
                 border: '1px solid rgba(255,255,255,0.06)',
                 marginBottom: 24,
-                display: 'flex', alignItems: 'center', gap: 32,
+                display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', gap: 32,
+                flexDirection: isMobile ? 'column' : 'row'
               }}
             >
               <div>
@@ -319,7 +326,7 @@ export default function History() {
               </motion.button>
             </motion.div>
           ) : view === 'grid' ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 14 }}>
               {filtered.map((c, i) => {
                 const sc = statusColor(c.status)
                 const ec = EMOTION_COLORS[c.emotion] || '#5A6A7E'
@@ -434,7 +441,7 @@ export default function History() {
                         borderBottom: isExp ? 'none' : undefined,
                         cursor: 'pointer',
                         display: 'grid',
-                        gridTemplateColumns: '160px 1fr 1fr 1fr 100px 120px 90px 24px',
+                        gridTemplateColumns: isMobile ? '1fr' : '160px 1fr 1fr 1fr 100px 120px 90px 24px',
                         alignItems: 'center', gap: 16, transition: 'all 0.2s',
                       }}
                     >
@@ -528,7 +535,7 @@ export default function History() {
                             background: `${sc}05`,
                             border: `1px solid ${sc}20`,
                             borderTop: `1px solid ${sc}10`,
-                            display: 'flex', gap: 40,
+                            display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr 1fr', gap: isMobile ? 20 : 40,
                           }}>
                             <div>
                               <p style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#3A4A5E', marginBottom: 4 }}>Logged at</p>
