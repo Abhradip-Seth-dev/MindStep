@@ -43,6 +43,14 @@ export default function Login() {
           setLoading(true)
           const user = result.user
 
+          // Ensure cookie is set before any routing to avoid middleware redirect loop
+          const token = await user.getIdToken()
+          await fetch('/api/auth/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token })
+          })
+
           const res = await fetch(`/api/user?firebaseUid=${user.uid}`)
           const existing = await res.json()
 

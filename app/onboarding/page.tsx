@@ -119,6 +119,14 @@ export default function Onboarding() {
           setLoading(true)
           const user = result.user
       
+          // Ensure cookie is set before any routing to avoid middleware redirect loop
+          const token = await user.getIdToken()
+          await fetch('/api/auth/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token })
+          })
+
           // Check if user already exists
           const res = await fetch(`/api/user?firebaseUid=${user.uid}`)
           const existing = await res.json()
