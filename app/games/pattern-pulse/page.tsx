@@ -25,6 +25,7 @@ type Phase = 'idle' | 'watching' | 'repeating' | 'correct' | 'wrong' | 'gameover
 
 export default function PatternPulse() {
   const router = useRouter()
+  const isMobile = useIsMobile()
   const [user, setUser] = useState<any>(null)
   const [userName, setUserName] = useState('')
   const [userData, setUserData] = useState<any>(null)

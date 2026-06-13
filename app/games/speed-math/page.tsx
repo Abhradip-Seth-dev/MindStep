@@ -50,6 +50,7 @@ function generateProblem(level: number): { a: number; b: number; op: Op; answer:
 
 export default function SpeedMath() {
   const router = useRouter()
+  const isMobile = useIsMobile()
   const [user, setUser] = useState<any>(null)
   const [userName, setUserName] = useState('')
   const [userData, setUserData] = useState<any>(null)

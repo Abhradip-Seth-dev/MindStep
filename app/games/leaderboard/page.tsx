@@ -44,6 +44,7 @@ interface LeaderEntry {
 
 export default function Leaderboard() {
   const router = useRouter()
+  const isMobile = useIsMobile()
   const [user, setUser]       = useState<any>(null)
   const [userName, setUserName] = useState('')
   const [userData, setUserData] = useState<any>(null)
