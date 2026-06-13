@@ -30,14 +30,15 @@ export function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(route)
   )
 
-  if (isStudentRoute) {
-    const studentSession = request.cookies.get('mindstep_auth_token')
-    
-    // If no valid auth token, redirect to onboarding (login)
-    if (!studentSession || !studentSession.value) {
-      return NextResponse.redirect(new URL('/onboarding', request.url))
-    }
-  }
+  // TEMPORARILY DISABLED: relying on client-side protection
+  // if (isStudentRoute) {
+  //   const studentSession = request.cookies.get('mindstep_auth_token')
+  //   
+  //   // If no valid auth token, redirect to onboarding (login)
+  //   if (!studentSession || !studentSession.value) {
+  //     return NextResponse.redirect(new URL('/onboarding', request.url))
+  //   }
+  // }
 
   return NextResponse.next()
 }
