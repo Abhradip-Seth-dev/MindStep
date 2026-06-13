@@ -48,27 +48,40 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsub = onIdTokenChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        const token = await firebaseUser.getIdToken()
-        await fetch('/api/auth/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token })
-        })
-        setUser(firebaseUser)
-        await fetchData(firebaseUser)
-      } else {
-        await fetch('/api/auth/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: null })
-        })
-        setUser(null)
-        setUserData(null)
-        setBaseline(null)
-        setCheckins([])
+      try {
+        if (firebaseUser) {
+          const token = await firebaseUser.getIdToken()
+          try {
+            await fetch('/api/auth/token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token })
+            })
+          } catch (err) {
+            console.error('Failed to set auth token cookie:', err)
+          }
+          setUser(firebaseUser)
+          await fetchData(firebaseUser)
+        } else {
+          try {
+            await fetch('/api/auth/token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token: null })
+            })
+          } catch (err) {
+            console.error('Failed to clear auth token cookie:', err)
+          }
+          setUser(null)
+          setUserData(null)
+          setBaseline(null)
+          setCheckins([])
+        }
+      } catch (err) {
+        console.error('onIdTokenChanged error:', err)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     })
 
     return () => unsub()
