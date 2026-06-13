@@ -35,11 +35,20 @@ export default function Login() {
   }
 
   const handleGoogleLogin = async () => {
+    // 1. MUST be the very first line to prevent popup-blocked error in strict browsers (Brave/Safari)
+    const provider = new GoogleAuthProvider()
+    let result;
     try {
-      setLoading(true)
-      setError('')
-      const provider = new GoogleAuthProvider()
-      const result = await signInWithPopup(auth, provider)
+      result = await signInWithPopup(auth, provider)
+    } catch (err: any) {
+      setError(err.message)
+      return
+    }
+
+    // 2. Now we can do state updates
+    setLoading(true)
+    setError('')
+    try {
       const user = result.user
 
       const res = await fetch(`/api/user?firebaseUid=${user.uid}`)
