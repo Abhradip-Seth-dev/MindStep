@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import {
   createUserWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
 } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
@@ -110,48 +111,64 @@ export default function Onboarding() {
   // Step 4 — consent
   const [consent, setConsent] = useState(false)
 
+  useEffect(() => {
+    const handleRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth)
+        if (result && result.user) {
+          setLoading(true)
+          const user = result.user
+      
+          // Check if user already exists
+          const res = await fetch(`/api/user?firebaseUid=${user.uid}`)
+          const existing = await res.json()
+      
+          if (!existing.error) {
+            // User exists — check if they have university info
+            if (existing.course) {
+              // Fully set up — go straight to dashboard
+              router.push('/dashboard')
+            } else {
+              // Exists but no university info — go to step 3
+              setName(existing.name || user.displayName || '')
+              setStep(3)
+            }
+            setLoading(false)
+            return
+          }
+      
+          // New user — create and go to step 3
+          await fetch('/api/user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              firebaseUid: user.uid,
+              name: user.displayName || 'Student',
+              email: user.email,
+              consentGiven: false,
+            }),
+          })
+      
+          setName(user.displayName || '')
+          setStep(3)
+          setLoading(false)
+        }
+      } catch (err: any) {
+        setError(err.message)
+        setLoading(false)
+      }
+    }
+    handleRedirect()
+  }, [router])
+
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true)
       setError('')
       const provider = new GoogleAuthProvider()
-      const result = await signInWithPopup(auth, provider)
-      const user = result.user
-  
-      // Check if user already exists
-      const res = await fetch(`/api/user?firebaseUid=${user.uid}`)
-      const existing = await res.json()
-  
-      if (!existing.error) {
-        // User exists — check if they have university info
-        if (existing.course) {
-          // Fully set up — go straight to dashboard
-          router.push('/dashboard')
-        } else {
-          // Exists but no university info — go to step 3
-          setName(existing.name || user.displayName || '')
-          setStep(3)
-        }
-        return
-      }
-  
-      // New user — create and go to step 3
-      await fetch('/api/user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firebaseUid: user.uid,
-          name: user.displayName || 'Student',
-          email: user.email,
-          consentGiven: false,
-        }),
-      })
-  
-      setName(user.displayName || '')
-      setStep(3)
+      await signInWithRedirect(auth, provider)
     } catch (err: any) {
       setError(err.message)
-    } finally {
       setLoading(false)
     }
   }
