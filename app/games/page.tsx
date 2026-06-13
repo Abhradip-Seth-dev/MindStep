@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { auth } from '@/lib/firebase'
@@ -94,7 +94,7 @@ const GAMES = [
   },
 ]
 
-export default function GamesHub() {
+function GamesHubContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, userData, loading } = useUser()
@@ -399,5 +399,13 @@ export default function GamesHub() {
         </motion.p>
       </main>
     </div>
+  )
+}
+
+export default function GamesHub() {
+  return (
+    <Suspense fallback={<div style={{ display: 'flex', minHeight: '100vh', background: '#080C12' }} />}>
+      <GamesHubContent />
+    </Suspense>
   )
 }
