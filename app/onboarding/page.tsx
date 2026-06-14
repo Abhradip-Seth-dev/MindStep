@@ -8,6 +8,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
+  updateProfile,
 } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
 
@@ -147,7 +148,13 @@ export default function Onboarding() {
         return
       }
   
-      // New user — create and go to step 3
+      // New user — set cookie first to avoid 403 race condition, then create doc
+      const newToken = await user.getIdToken()
+      await fetch('/api/auth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: newToken }),
+      })
       await fetch('/api/user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -178,6 +185,17 @@ export default function Onboarding() {
       setError('')
       const result = await createUserWithEmailAndPassword(auth, email, password)
       const user = result.user
+
+      // Set displayName in Firebase Auth
+      await updateProfile(user, { displayName: name })
+
+      // Set cookie BEFORE calling /api/user to avoid 403 race condition
+      const token = await user.getIdToken()
+      await fetch('/api/auth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      })
 
       await fetch('/api/user', {
         method: 'POST',
