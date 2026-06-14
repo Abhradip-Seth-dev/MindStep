@@ -150,10 +150,10 @@ export default function Companion() {
 
         {/* Top bar */}
         <div style={{
-          position: 'sticky', top: 0, zIndex: 40, padding: '16px 32px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          position: 'sticky', top: 0, zIndex: 40, padding: isMobile ? '12px 16px' : '16px 32px',
+          display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between',
           background: 'rgba(8,12,18,0.92)', backdropFilter: 'blur(24px)',
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          borderBottom: '1px solid rgba(255,255,255,0.05)', gap: isMobile ? 12 : 0
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <motion.div
@@ -179,7 +179,7 @@ export default function Companion() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
             {/* Memory indicator */}
             {messages.length > 0 && (
               <div style={{
@@ -281,7 +281,7 @@ export default function Companion() {
           )}
         </AnimatePresence>
 
-        <div style={{ flex: 1, padding: '32px', display: 'flex', flexDirection: 'column', maxWidth: 720, margin: '0 auto', width: '100%' }}>
+        <div style={{ flex: 1, padding: isMobile ? '16px' : '32px', display: 'flex', flexDirection: 'column', maxWidth: 720, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
           <AnimatePresence mode="wait">
 
             {/* LANDING — shown only when no history exists */}
@@ -391,7 +391,7 @@ export default function Companion() {
                         </motion.div>
                       )}
                       <div style={{
-                        maxWidth: '72%', padding: '14px 18px',
+                        maxWidth: isMobile ? '85%' : '72%', padding: '14px 18px',
                         borderRadius: msg.role === 'user' ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
                         background: msg.role === 'user'
                           ? 'linear-gradient(135deg, rgba(91,156,246,0.2), rgba(91,156,246,0.1))'
@@ -472,8 +472,9 @@ export default function Companion() {
                       disabled={thinking}
                       style={{
                         flex: 1, background: 'none', border: 'none',
-                        color: '#E8EEF5', fontSize: 14, outline: 'none',
-                        fontFamily: 'Inter, sans-serif',
+                        color: '#E8EEF5', fontSize: 16, outline: 'none',
+                        fontFamily: 'Inter, sans-serif', boxSizing: 'border-box',
+                        minWidth: 0,
                       }}
                     />
                     <motion.button

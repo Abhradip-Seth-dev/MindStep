@@ -237,14 +237,14 @@ export default function CommunityPage() {
 
         {/* Header */}
         <div style={{ position: 'sticky', top: 0, zIndex: 40, padding: isMobile ? '14px 16px' : '20px 40px', background: 'rgba(8,12,18,0.92)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: isMobile ? 16 : 0 }}>
             <div>
               <p style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#3A4A5E', marginBottom: 4 }}>TNU · Mindstep</p>
               <h1 style={{ fontSize: 26, fontFamily: 'Playfair Display, serif', color: '#E8EEF5', fontWeight: 600, margin: 0 }}>Community</h1>
             </div>
 
             {/* Tab Switcher */}
-            <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', padding: 5, borderRadius: 16, border: '1px solid rgba(255,255,255,0.07)' }}>
+            <div style={{ display: 'flex', gap: 4, background: 'rgba(255,255,255,0.03)', padding: 5, borderRadius: 16, border: '1px solid rgba(255,255,255,0.07)', width: isMobile ? '100%' : 'auto', overflowX: 'auto' }}>
               {([
                 { key: 'wisdom', label: '✨ Wisdom', color: '#A78BFA' },
                 { key: 'confessions', label: '💬 Confessions', color: '#4FC3A1' },
@@ -260,6 +260,7 @@ export default function CommunityPage() {
                     fontSize: 13, fontWeight: 600, transition: 'all 0.25s',
                     fontFamily: 'Inter, sans-serif',
                     boxShadow: activeTab === tab.key ? `0 0 20px ${tab.color}15` : 'none',
+                    flex: isMobile ? 1 : 'none', whiteSpace: 'nowrap',
                   }}
                 >
                   {tab.label}
@@ -272,13 +273,13 @@ export default function CommunityPage() {
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.96 }}
                 onClick={() => setIsComposeOpen(true)}
-                style={{ padding: '10px 22px', borderRadius: 14, background: 'linear-gradient(135deg, #4FC3A1, #3DA88B)', color: '#080C12', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(79,195,161,0.25)', letterSpacing: '0.02em' }}
+                style={{ padding: '10px 22px', borderRadius: 14, background: 'linear-gradient(135deg, #4FC3A1, #3DA88B)', color: '#080C12', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(79,195,161,0.25)', letterSpacing: '0.02em', width: isMobile ? '100%' : 'auto' }}
               >
                 + Share
               </motion.button>
             )}
 
-            {activeTab === 'wisdom' && <div style={{ width: 100 }} />}
+            {activeTab === 'wisdom' && !isMobile && <div style={{ width: 100 }} />}
           </div>
         </div>
 

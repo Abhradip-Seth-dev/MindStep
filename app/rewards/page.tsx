@@ -202,7 +202,7 @@ export default function Rewards() {
         </motion.div>
 
         {/* Top Row — Level card + Weekly Challenge */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 20 }}>
 
           {/* Level / XP Card */}
           <motion.div
@@ -280,7 +280,7 @@ export default function Rewards() {
         {/* Stats Row */}
         <motion.div
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 28 }}
+          style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 12, marginBottom: 28 }}
         >
           {[
             { icon: '🏅', label: 'Badges Earned', value: `${unlockedCount}/${ALL_BADGES.length}`, color: '#E8A04A' },
@@ -299,12 +299,12 @@ export default function Rewards() {
 
         {/* Badge Section */}
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', marginBottom: 16, gap: isMobile ? 12 : 0 }}>
             <div>
               <p style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#3A4A5E', marginBottom: 3, fontWeight: 600 }}>Badge Collection</p>
               <h2 style={{ fontSize: 20, fontFamily: 'Playfair Display, serif', color: '#E8EEF5' }}>Your Achievements</h2>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', width: isMobile ? '100%' : 'auto', paddingBottom: isMobile ? 4 : 0 }}>
               {CATEGORIES.map(cat => (
                 <motion.button key={cat.id} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                   onClick={() => setActiveCategory(cat.id)}
@@ -312,6 +312,7 @@ export default function Rewards() {
                     padding: '7px 14px', borderRadius: 10, border: `1px solid ${activeCategory === cat.id ? 'rgba(79,195,161,0.4)' : 'rgba(255,255,255,0.07)'}`,
                     background: activeCategory === cat.id ? 'rgba(79,195,161,0.1)' : 'transparent',
                     color: activeCategory === cat.id ? '#4FC3A1' : '#4A5A6E', fontSize: 12, cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                    whiteSpace: 'nowrap'
                   }}>
                   {cat.icon} {cat.label}
                 </motion.button>
@@ -319,7 +320,7 @@ export default function Rewards() {
             </div>
           </div>
 
-          <motion.div layout style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+          <motion.div layout style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 12 }}>
             <AnimatePresence mode="popLayout">
               {filtered.map((badge, i) => (
                 <BadgeCard key={badge.id} badge={badge} unlocked={badge.isUnlocked} index={i} />
@@ -328,17 +329,16 @@ export default function Rewards() {
           </motion.div>
         </div>
 
-        {/* CTA if no checkins */}
         {totalCheckins === 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
-            style={{ marginTop: 24, padding: '28px 32px', borderRadius: 20, background: 'linear-gradient(135deg, rgba(79,195,161,0.08), rgba(91,156,246,0.05))', border: '1px solid rgba(79,195,161,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            style={{ marginTop: 24, padding: isMobile ? '24px' : '28px 32px', borderRadius: 20, background: 'linear-gradient(135deg, rgba(79,195,161,0.08), rgba(91,156,246,0.05))', border: '1px solid rgba(79,195,161,0.15)', display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: isMobile ? 16 : 0 }}>
             <div>
               <h3 style={{ fontSize: 18, fontFamily: 'Playfair Display, serif', color: '#E8EEF5', marginBottom: 6 }}>Start earning XP today</h3>
               <p style={{ fontSize: 13, color: '#5A6A7E' }}>Log your first check-in to earn 50 XP and unlock your first badge.</p>
             </div>
             <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
               onClick={() => router.push('/checkin')}
-              style={{ padding: '12px 24px', borderRadius: 12, background: 'linear-gradient(135deg, #4FC3A1, #3DA88B)', color: '#080C12', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(79,195,161,0.3)', whiteSpace: 'nowrap', marginLeft: 24 }}>
+              style={{ padding: '12px 24px', borderRadius: 12, background: 'linear-gradient(135deg, #4FC3A1, #3DA88B)', color: '#080C12', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', boxShadow: '0 4px 20px rgba(79,195,161,0.3)', whiteSpace: 'nowrap', marginLeft: isMobile ? 0 : 24, width: isMobile ? '100%' : 'auto' }}>
               Log today →
             </motion.button>
           </motion.div>
