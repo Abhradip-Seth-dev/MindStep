@@ -26,7 +26,7 @@ function getLevelColor(l: number) { return LEVEL_COLORS[Math.min(l-1, LEVEL_COLO
 
 export default function Dashboard() {
   const router = useRouter()
-  const { user, userData, baseline, checkins, loading } = useUser()
+  const { user, userData, baseline, checkins, loading, refreshData } = useUser()
   const [driftStatus, setDriftStatus] = useState<'green' | 'amber' | 'red'>('green')
   const [particlesInit, setParticlesInit] = useState(false)
   const isMobile = useIsMobile()
@@ -34,6 +34,12 @@ export default function Dashboard() {
   useEffect(() => {
     initParticlesEngine(async (engine) => await loadSlim(engine)).then(() => setParticlesInit(true))
   }, [])
+
+  // Refresh data on every dashboard visit so check-in results are immediately visible
+  useEffect(() => {
+    if (user) refreshData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   useEffect(() => {
     if (!loading && !user) router.push('/onboarding')
@@ -135,13 +141,34 @@ export default function Dashboard() {
                   <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }}
                     style={{ width: 10, height: 10, borderRadius: '50%', background: status.color, flexShrink: 0 }} />
                   <div>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: status.color, marginBottom: 2 }}>🔬 Baseline Calibration — Day {checkins.length} of 7</p>
-                    <p style={{ fontSize: 12, color: '#8B9BB0' }}>{status.message}</p>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: status.color, marginBottom: 2 }}>
+                      🔬 Baseline Calibration — Day {baselineDaysCompleted} of 7 complete
+                    </p>
+                    <p style={{ fontSize: 12, color: '#8B9BB0' }}>
+                      {baselineDaysCompleted === 0
+                        ? 'Log your first check-in to start building your baseline.'
+                        : `${7 - baselineDaysCompleted} day${7 - baselineDaysCompleted === 1 ? '' : 's'} remaining — Aura is learning your patterns.`}
+                    </p>
                   </div>
                 </div>
                 <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-                  <motion.div initial={{ width: 0 }} animate={{ width: `${(checkins.length / 7) * 100}%` }} transition={{ duration: 1, ease: 'easeOut' }}
+                  <motion.div
+                    key={baselineDaysCompleted}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(baselineDaysCompleted / 7) * 100}%` }}
+                    transition={{ duration: 1, ease: 'easeOut' }}
                     style={{ height: '100%', borderRadius: 2, background: 'linear-gradient(90deg, #5B9CF6, #4FC3A1)', boxShadow: '0 0 8px rgba(91,156,246,0.5)' }} />
+                </div>
+                {/* Day pip indicators */}
+                <div style={{ display: 'flex', gap: 6, marginTop: 8, justifyContent: 'center' }}>
+                  {Array.from({ length: 7 }, (_, i) => (
+                    <div key={i} style={{
+                      width: 8, height: 8, borderRadius: '50%',
+                      background: i < baselineDaysCompleted ? '#4FC3A1' : 'rgba(255,255,255,0.08)',
+                      boxShadow: i < baselineDaysCompleted ? '0 0 6px rgba(79,195,161,0.6)' : 'none',
+                      transition: 'all 0.3s',
+                    }} />
+                  ))}
                 </div>
               </div>
             ) : (
