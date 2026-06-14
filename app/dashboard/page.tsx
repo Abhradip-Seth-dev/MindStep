@@ -54,12 +54,16 @@ export default function Dashboard() {
     pressure: c.pressure,
   }))
 
-  const statusConfig = {
-    green: { color: '#4FC3A1', bg: 'rgba(79,195,161,0.08)', border: 'rgba(79,195,161,0.2)', label: 'Stable Baseline', message: "You're doing well. Your baseline is holding steady." },
+  const statusConfig: Record<string, { color: string; bg: string; border: string; label: string; message: string }> = {
+    green: { color: '#4FC3A1', bg: 'rgba(79,195,161,0.08)', border: 'rgba(79,195,161,0.2)', label: 'Stable', message: "You're doing well. Your baseline is holding steady." },
     amber: { color: '#E8A04A', bg: 'rgba(232,160,74,0.08)', border: 'rgba(232,160,74,0.2)', label: 'Drifting Detected', message: "You've seemed a bit low this week. Consider talking to someone." },
     red: { color: '#E05C5C', bg: 'rgba(224,92,92,0.08)', border: 'rgba(224,92,92,0.2)', label: 'Needs Attention', message: "Your pattern looks very different. Someone who cares has been notified." },
+    calibrating: { color: '#5B9CF6', bg: 'rgba(91,156,246,0.08)', border: 'rgba(91,156,246,0.2)', label: 'Calibrating', message: "Aura is still learning your patterns. Check in daily to build your baseline." },
   }
-  const status = statusConfig[driftStatus]
+  const baselineDaysCompleted: number = userData?.baselineDaysCompleted ?? 0
+  const isCalibrating = baselineDaysCompleted < 7
+  const effectiveDriftStatus = isCalibrating ? 'calibrating' : driftStatus
+  const status = statusConfig[effectiveDriftStatus] ?? statusConfig.green
 
   const userName = userData?.name || user?.displayName || user?.email?.split('@')[0] || 'Student'
   const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 17 ? 'Good afternoon' : 'Good evening'
@@ -73,11 +77,12 @@ export default function Dashboard() {
 
   // Aura's Insight
   const lastC = checkins[checkins.length - 1]
-  const insight = lastC
-    ? (lastC.status === 'red' ? 'Your latest check-in showed high stress. Please take it easy today.'
-      : lastC.sleep < 5 ? 'Your sleep was very low last night. Try to rest early tonight for a better tomorrow.'
-      : lastC.status === 'green' ? 'You are in a great baseline state! Whatever you are doing, it is working.'
-      : 'You are doing okay, but remember to take breaks and stay hydrated.')
+  const insight = isCalibrating
+    ? `Aura is calibrating your baseline (Day ${checkins.length} of 7). Keep checking in daily — your personal wellness profile is being built.`
+    : lastC
+    ? (lastC.mwpqStatus === 'alert' || lastC.status === 'red' ? 'Your latest check-in showed high stress. Please take it easy today.'
+      : lastC.mwpqStatus === 'needs_attention' || lastC.status === 'amber' ? 'You are doing okay, but remember to take breaks and reach out if needed.'
+      : 'You are in a great state! Whatever you are doing, keep it up.')
     : 'Log your first check-in to get daily insights from Aura.'
 
   if (loading) return (
@@ -120,17 +125,38 @@ export default function Dashboard() {
           </motion.button>
         </div>
 
-        {/* ── DRIFT ALERT ───────────────────────────────────────────── */}
-        {driftStatus !== 'green' && (
+        {/* ── STATUS BANNER ─────────────────────────────────────────── */}
+        {(isCalibrating || driftStatus !== 'green') && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-            style={{ padding: '16px 20px', borderRadius: 16, background: status.bg, border: `1px solid ${status.border}`, display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
-            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }} style={{ width: 10, height: 10, borderRadius: '50%', background: status.color }} />
-            <div>
-              <p style={{ fontSize: 13, fontWeight: 600, color: status.color, marginBottom: 2 }}>{status.label}</p>
-              <p style={{ fontSize: 13, color: '#E8EEF5' }}>{status.message}</p>
-            </div>
+            style={{ padding: '16px 20px', borderRadius: 16, background: status.bg, border: `1px solid ${status.border}`, marginBottom: 24 }}>
+            {isCalibrating ? (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                  <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }}
+                    style={{ width: 10, height: 10, borderRadius: '50%', background: status.color, flexShrink: 0 }} />
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: status.color, marginBottom: 2 }}>🔬 Baseline Calibration — Day {checkins.length} of 7</p>
+                    <p style={{ fontSize: 12, color: '#8B9BB0' }}>{status.message}</p>
+                  </div>
+                </div>
+                <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${(checkins.length / 7) * 100}%` }} transition={{ duration: 1, ease: 'easeOut' }}
+                    style={{ height: '100%', borderRadius: 2, background: 'linear-gradient(90deg, #5B9CF6, #4FC3A1)', boxShadow: '0 0 8px rgba(91,156,246,0.5)' }} />
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }}
+                  style={{ width: 10, height: 10, borderRadius: '50%', background: status.color, flexShrink: 0 }} />
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: status.color, marginBottom: 2 }}>{status.label}</p>
+                  <p style={{ fontSize: 13, color: '#E8EEF5' }}>{status.message}</p>
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
+
 
         {/* ── TOP ROW: Level Progress + Aura's Insight ──────────────── */}
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 20, marginBottom: 24 }}>

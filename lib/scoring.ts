@@ -248,3 +248,129 @@ export function updateBaseline(
     totalDays: existing.totalDays + 1,
   }
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ── MWPQ Domain-Aware Scoring (New System) ────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+
+import type { MWPQQuestion, QuestionCategory } from './questions'
+import { SCORE_THRESHOLDS } from './questions'
+
+export type MWPQStatus = 'calibrating' | 'stable' | 'drifting' | 'needs_attention' | 'alert'
+
+export type MWPQAnswer = {
+  questionId: string
+  // For frequency/quality scales: 1-5
+  // For yes_no / multiple_choice: the index of the selected option (0-based)
+  value: number
+}
+
+export type DomainScore = {
+  domain: QuestionCategory
+  rawAvg: number      // 1-5 scale average
+  normalizedAvg: number // always "high = good" normalized
+  questionCount: number
+}
+
+/**
+ * Normalize a raw answer so that high = good.
+ * For reverse-scored questions, we flip: normalizedScore = 6 - rawScore.
+ */
+function normalizeAnswer(raw: number, reverse: boolean): number {
+  return reverse ? 6 - raw : raw
+}
+
+/**
+ * Calculate per-domain scores from a set of answered MWPQ questions.
+ * Returns a map of domain → DomainScore.
+ */
+export function calcDomainScores(
+  answers: MWPQAnswer[],
+  questionBank: MWPQQuestion[]
+): Map<QuestionCategory, DomainScore> {
+  const domainAccum = new Map<QuestionCategory, { sum: number; count: number }>()
+
+  for (const answer of answers) {
+    const q = questionBank.find(q => q.id === answer.questionId)
+    if (!q) continue
+
+    // For yes_no / multiple_choice, value 0 (first option) = best → maps to 5
+    // Simple linear mapping for 3-option yes_no: [good, neutral, bad] → [5, 3, 1]
+    let normalized: number
+    if (q.type === 'yes_no' || q.type === 'multiple_choice') {
+      const optionCount = q.options?.length ?? 2
+      // Option 0 = best response. Map linearly to 5..1
+      normalized = 5 - (answer.value / Math.max(optionCount - 1, 1)) * 4
+    } else {
+      // frequency_scale or quality_scale (1-5)
+      normalized = normalizeAnswer(Math.min(5, Math.max(1, answer.value)), q.reverse ?? false)
+    }
+
+    const existing = domainAccum.get(q.category) ?? { sum: 0, count: 0 }
+    domainAccum.set(q.category, { sum: existing.sum + normalized, count: existing.count + 1 })
+  }
+
+  const result = new Map<QuestionCategory, DomainScore>()
+  for (const [domain, { sum, count }] of domainAccum.entries()) {
+    const normalizedAvg = count > 0 ? sum / count : 0
+    result.set(domain, {
+      domain,
+      rawAvg: normalizedAvg, // both are normalized here; raw is kept for reference
+      normalizedAvg,
+      questionCount: count,
+    })
+  }
+  return result
+}
+
+/**
+ * Derive an overall MWPQ status from domain scores.
+ * Thresholds from user specification:
+ *   Stable:          overall avg ≥ 4.0 AND no domain below 3.2
+ *   Drifting:        overall avg 3.2–3.9 (gradual decline pattern)
+ *   Needs Attention: overall avg 2.5–3.1 OR two or more domains below 3.2
+ *   Alert:           overall avg < 2.5 OR rapid deterioration across domains
+ */
+export function calcMWPQStatus(
+  domainScores: Map<QuestionCategory, DomainScore>,
+  baselineDaysCompleted: number,
+): MWPQStatus {
+  // During the 7-day calibration period — never show a negative tag
+  if (baselineDaysCompleted < 7) return 'calibrating'
+
+  const scores = Array.from(domainScores.values()).map(d => d.normalizedAvg)
+  if (scores.length === 0) return 'calibrating'
+
+  const overallAvg = scores.reduce((a, b) => a + b, 0) / scores.length
+  const domainsBelow3_2 = scores.filter(s => s < SCORE_THRESHOLDS.DOMAIN_LOW_THRESHOLD).length
+
+  if (overallAvg < SCORE_THRESHOLDS.ALERT) return 'alert'
+  if (overallAvg < SCORE_THRESHOLDS.NEEDS_ATTENTION_UPPER || domainsBelow3_2 >= 2) return 'needs_attention'
+  if (overallAvg < SCORE_THRESHOLDS.STABLE || domainsBelow3_2 >= 1) return 'drifting'
+  return 'stable'
+}
+
+/**
+ * Detect drift across the last 7 MWPQ check-ins.
+ * Returns true if the average MWPQ score has declined significantly over time.
+ */
+export function detectMWPQDrift(recentMWPQScores: number[]): boolean {
+  if (recentMWPQScores.length < 3) return false
+  const recent3 = recentMWPQScores.slice(-3)
+  const avg3 = recent3.reduce((a, b) => a + b, 0) / 3
+  return avg3 < SCORE_THRESHOLDS.DRIFTING_LOWER
+}
+
+/**
+ * Map an MWPQ status to the legacy traffic-light status for backward compatibility
+ * (dashboard, alerts, etc. still use 'green' | 'amber' | 'red').
+ */
+export function mwpqStatusToLegacy(status: MWPQStatus): 'green' | 'amber' | 'red' {
+  switch (status) {
+    case 'stable':          return 'green'
+    case 'calibrating':     return 'green'  // safe default
+    case 'drifting':        return 'amber'
+    case 'needs_attention': return 'amber'
+    case 'alert':           return 'red'
+  }
+}
