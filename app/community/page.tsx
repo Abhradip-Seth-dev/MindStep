@@ -301,7 +301,7 @@ export default function CommunityPage() {
                   </p>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: isMobile ? 16 : 20 }}>
                   {WISDOM_BITES.map((bite, i) => (
                     <motion.div
                       key={bite.id}
@@ -356,7 +356,7 @@ export default function CommunityPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
-                  style={{ marginTop: 40, padding: '24px 32px', borderRadius: 20, background: 'rgba(167,139,250,0.05)', border: '1px solid rgba(167,139,250,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                  style={{ marginTop: 40, padding: isMobile ? '20px' : '24px 32px', borderRadius: 20, background: 'rgba(167,139,250,0.05)', border: '1px solid rgba(167,139,250,0.12)', display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: isMobile ? 16 : 0 }}
                 >
                   <div>
                     <p style={{ fontSize: 13, color: '#A78BFA', fontWeight: 600, marginBottom: 4 }}>📚 Full Research Articles</p>
@@ -380,8 +380,8 @@ export default function CommunityPage() {
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.3 }}
               >
-                <div style={{ marginBottom: 28, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-                  <p style={{ fontSize: 14, color: '#5A6A7E', lineHeight: 1.6, maxWidth: 500 }}>
+                <div style={{ marginBottom: 28, display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'flex-end', justifyContent: 'space-between', gap: isMobile ? 16 : 0 }}>
+                  <p style={{ fontSize: 14, color: '#5A6A7E', lineHeight: 1.6, maxWidth: 500, margin: 0 }}>
                     Fully anonymous. Real stories from real TNU students. You're not alone in this.
                   </p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 20, background: 'rgba(79,195,161,0.06)', border: '1px solid rgba(79,195,161,0.12)', flexShrink: 0 }}>
@@ -393,13 +393,13 @@ export default function CommunityPage() {
                 </div>
 
                 {isFetching ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 20 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(340px, 1fr))', gap: 20 }}>
                     {[1, 2, 3].map(i => (
                       <div key={i} style={{ height: 200, borderRadius: 20, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', animation: 'pulse 1.5s infinite' }} />
                     ))}
                   </div>
                 ) : (
-                  <div style={{ columns: '340px', columnGap: 20 }}>
+                  <div style={{ columns: isMobile ? 1 : '340px', columnGap: 20 }}>
                     {confessions.map((confession, i) => (
                       <motion.div
                         key={confession.id}
@@ -521,7 +521,7 @@ export default function CommunityPage() {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.94, y: 24 }}
               onClick={e => e.stopPropagation()}
-              style={{ width: '100%', maxWidth: 560, background: '#0E1520', borderRadius: 24, padding: 32, border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 40px 80px rgba(0,0,0,0.6)' }}
+              style={{ width: '100%', maxWidth: 560, background: '#0E1520', borderRadius: 24, padding: isMobile ? '24px 20px' : 32, border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 40px 80px rgba(0,0,0,0.6)' }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <div>
@@ -542,7 +542,7 @@ export default function CommunityPage() {
                   value={newAuthor}
                   onChange={e => setNewAuthor(e.target.value)}
                   placeholder="Anonymous Student"
-                  style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, color: '#E8EEF5', fontSize: 13, fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '11px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, color: '#E8EEF5', fontSize: 16, fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' }}
                 />
               </div>
 
@@ -553,7 +553,7 @@ export default function CommunityPage() {
                   onChange={e => setNewText(e.target.value)}
                   placeholder="What's on your mind?…"
                   maxLength={500}
-                  style={{ width: '100%', height: 130, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 14px', color: '#E8EEF5', fontSize: 14, fontFamily: 'Inter, sans-serif', resize: 'none', outline: 'none', boxSizing: 'border-box', lineHeight: 1.7 }}
+                  style={{ width: '100%', height: 130, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 14px', color: '#E8EEF5', fontSize: 16, fontFamily: 'Inter, sans-serif', resize: 'none', outline: 'none', boxSizing: 'border-box', lineHeight: 1.7 }}
                 />
                 <p style={{ fontSize: 11, color: '#2A3547', textAlign: 'right', marginTop: 6 }}>{newText.length}/500</p>
               </div>
@@ -626,7 +626,7 @@ export default function CommunityPage() {
                   onChange={e => setCommentInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSendComment()}
                   placeholder="Write a supportive comment…"
-                  style={{ flex: 1, background: 'none', border: 'none', color: '#E8EEF5', fontSize: 14, outline: 'none', fontFamily: 'Inter, sans-serif' }}
+                  style={{ flex: 1, background: 'none', border: 'none', color: '#E8EEF5', fontSize: 16, outline: 'none', fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' }}
                 />
                 <motion.button
                   whileHover={{ scale: 1.08 }}
