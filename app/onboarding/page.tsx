@@ -199,8 +199,12 @@ export default function Onboarding() {
   }
 
   const handleUniversityInfo = async () => {
-    if (!uid || !school || !course || !rollNumber || !semester) {
+    if (!school || !course || !semester) {
       setError('Please fill in all required fields')
+      return
+    }
+    if (!uid && !rollNumber) {
+      setError('Please provide either your UID or Roll Number')
       return
     }
     if (studentType === 'hosteller' && !hostel) {
@@ -551,7 +555,7 @@ export default function Onboarding() {
 
               {/* UID */}
               <div style={{ marginBottom: 12 }}>
-                <label style={labelStyle}>University ID (UID)</label>
+                <label style={labelStyle}>University ID (UID) <span style={{ textTransform: 'none', fontSize: 10, color: '#5A6A7E', fontWeight: 400 }}>(Provide UID or Roll No)</span></label>
                 <input
                   type="text" value={uid}
                   onChange={(e) => setUid(e.target.value)}
@@ -564,7 +568,7 @@ export default function Onboarding() {
 
               {/* Roll Number */}
               <div style={{ marginBottom: 12 }}>
-                <label style={labelStyle}>Roll Number</label>
+                <label style={labelStyle}>Roll Number <span style={{ textTransform: 'none', fontSize: 10, color: '#5A6A7E', fontWeight: 400 }}>(Provide UID or Roll No)</span></label>
                 <input
                   type="text" value={rollNumber}
                   onChange={(e) => setRollNumber(e.target.value)}
