@@ -30,7 +30,7 @@ const SCHOOLS: Record<string, string[]> = {
     'B.Sc Biotechnology', 'B.Sc Microbiology', 'B.Sc Biochemistry'
   ],
   'School of Health Sciences': [
-    'B.Sc Nursing', 'B.Sc Medical Lab Technology', 'B.Sc Radiology'
+    'B.Sc Nursing', 'B.Sc Medical Lab Technology', 'B.Sc Radiology','B.sc in Applied Psychology'
   ],
   'School of Hospitality & Culinary Art': [
     'BHM Hotel Management', 'B.Sc Culinary Arts'
