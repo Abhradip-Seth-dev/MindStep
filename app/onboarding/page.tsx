@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
+import { useIsMobile } from '@/lib/hooks'
 import {
   createUserWithEmailAndPassword,
   signInWithPopup,
@@ -69,12 +70,13 @@ const inputStyle = {
   background: 'rgba(255,255,255,0.03)',
   border: '1px solid rgba(255,255,255,0.08)',
   color: '#E8EEF5',
-  fontSize: 14,
+  fontSize: 16,
   outline: 'none',
   fontFamily: 'Inter, sans-serif',
   transition: 'all 0.3s ease',
   appearance: 'none' as const,
   boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)',
+  boxSizing: 'border-box' as const,
 }
 
 const labelStyle = {
@@ -89,6 +91,7 @@ const labelStyle = {
 
 export default function Onboarding() {
   const router = useRouter()
+  const isMobile = useIsMobile()
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -265,29 +268,41 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden"
-      style={{ background: '#080C12' }}>
+    <div
+      style={{
+        minHeight: '100vh', display: 'flex', alignItems: 'flex-start',
+        justifyContent: 'center',
+        padding: isMobile ? '24px 16px 48px' : '40px 16px',
+        background: '#080C12', position: 'relative', overflowX: 'hidden',
+      }}
+    >
 
       {/* Background orbs */}
-      <div className="fixed top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(79,195,161,0.06) 0%, transparent 70%)' }} />
-      <div className="fixed bottom-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(91,156,246,0.06) 0%, transparent 70%)' }} />
+      <div style={{
+        position: 'fixed', top: '-20%', left: '-10%', width: 500, height: 500, borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(79,195,161,0.06) 0%, transparent 70%)',
+        pointerEvents: 'none',
+      }} />
+      <div style={{
+        position: 'fixed', bottom: '-20%', right: '-10%', width: 600, height: 600, borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(91,156,246,0.06) 0%, transparent 70%)',
+        pointerEvents: 'none',
+      }} />
 
-      <div className="w-full relative z-10" style={{ maxWidth: 520 }}>
+      <div style={{ width: '100%', maxWidth: 520, position: 'relative', zIndex: 10 }}>
 
         {/* Step indicators */}
-        <div className="flex items-center justify-center gap-2 mb-12">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: isMobile ? 24 : 48 }}>
           {steps.map((s) => (
             <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               <motion.div
                 animate={{
-                  width: step === s.id ? 40 : 12,
+                  width: step === s.id ? 32 : 10,
                   backgroundColor: step >= s.id ? '#4FC3A1' : '#1E2A38',
                   boxShadow: step >= s.id ? '0 0 12px rgba(79,195,161,0.5)' : 'none',
                 }}
                 transition={{ duration: 0.4, type: 'spring' }}
-                className="h-[6px] rounded-full"
+                style={{ height: 6, borderRadius: 3 }}
               />
             </div>
           ))}
@@ -299,8 +314,8 @@ export default function Onboarding() {
             backdropFilter: 'blur(32px)',
             WebkitBackdropFilter: 'blur(32px)',
             border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: 32,
-            padding: '48px 40px',
+            borderRadius: isMobile ? 24 : 32,
+            padding: isMobile ? '28px 20px' : '48px 40px',
             boxShadow: '0 24px 64px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)',
             position: 'relative',
             overflow: 'hidden'
@@ -338,7 +353,7 @@ export default function Onboarding() {
               <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#4FC3A1', marginBottom: 12 }}>
                 Team Ignite
               </p>
-              <h1 style={{ fontSize: 48, fontFamily: 'Playfair Display, serif', color: '#E8EEF5', marginBottom: 12, fontWeight: 600 }}>
+              <h1 style={{ fontSize: isMobile ? 36 : 48, fontFamily: 'Playfair Display, serif', color: '#E8EEF5', marginBottom: 12, fontWeight: 600 }}>
                 Mind<span style={{ color: '#4FC3A1' }}>Step</span>
               </h1>
               <p style={{ fontSize: 16, color: '#8B9BB0', marginBottom: 8 }}>

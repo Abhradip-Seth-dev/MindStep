@@ -43,10 +43,11 @@ export default function AdminLogin() {
     background: 'rgba(255,255,255,0.04)',
     border: '1px solid rgba(255,255,255,0.08)',
     color: '#E8EEF5',
-    fontSize: 14,
+    fontSize: 16,
     outline: 'none',
     fontFamily: 'Inter, sans-serif',
     transition: 'border-color 0.2s',
+    boxSizing: 'border-box' as const,
   }
 
   return (
@@ -56,9 +57,11 @@ export default function AdminLogin() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
+      padding: '24px',
       fontFamily: 'Inter, sans-serif',
       position: 'relative',
       overflow: 'hidden',
+      boxSizing: 'border-box',
     }}>
 
       {/* Ambient */}
