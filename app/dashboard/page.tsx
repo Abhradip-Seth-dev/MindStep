@@ -84,7 +84,7 @@ export default function Dashboard() {
   // Aura's Insight
   const lastC = checkins[checkins.length - 1]
   const insight = isCalibrating
-    ? `Aura is calibrating your baseline (Day ${checkins.length} of 7). Keep checking in daily — your personal wellness profile is being built.`
+    ? `Aura is calibrating your baseline (Day ${baselineDaysCompleted} of 7). Keep checking in daily — your personal wellness profile is being built.`
     : lastC
     ? (lastC.mwpqStatus === 'alert' || lastC.status === 'red' ? 'Your latest check-in showed high stress. Please take it easy today.'
       : lastC.mwpqStatus === 'needs_attention' || lastC.status === 'amber' ? 'You are doing okay, but remember to take breaks and reach out if needed.'
