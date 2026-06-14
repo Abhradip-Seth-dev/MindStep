@@ -108,40 +108,39 @@ RULES:
 - Focus on listening and gentle reflection.
 - Always respond in English.`
 
-    // Use only the most recent messages as context for Gemini (to keep token usage manageable)
+    // Use only the most recent messages as context to keep token usage manageable
     const contextMessages = messages.slice(-MAX_CONTEXT_MESSAGES)
 
-    const geminiMessages = contextMessages.map((m: any) => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }],
-    }))
+    const groqMessages = [
+      { role: 'system', content: systemPrompt },
+      ...contextMessages.map((m: any) => ({
+        role: m.role === 'assistant' ? 'assistant' : 'user',
+        content: m.content,
+      }))
+    ]
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: {
-            parts: [{ text: systemPrompt }],
-          },
-          contents: geminiMessages,
-          generationConfig: {
-            maxOutputTokens: 300,
-            temperature: 0.8,
-          },
-        }),
-      }
-    )
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json' 
+      },
+      body: JSON.stringify({
+        model: 'llama3-8b-8192',
+        messages: groqMessages,
+        max_tokens: 300,
+        temperature: 0.8,
+      }),
+    })
 
     const data = await response.json()
 
     if (data.error) {
-      console.error('Gemini error:', data.error)
+      console.error('Groq error:', data.error)
       return Response.json({ message: "I'm here with you. How are you feeling right now?" })
     }
 
-    const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || "I'm here. Take your time."
+    const replyText = data.choices?.[0]?.message?.content || "I'm here. Take your time."
 
     // ── Persist the latest user message + Aura's reply to Firestore ──────────
     // The last message in the array is always the newest user message
